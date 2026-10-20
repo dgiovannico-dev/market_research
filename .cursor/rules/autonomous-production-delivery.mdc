@@ -1,0 +1,60 @@
+---
+description: Autonomous end-to-end delivery until production-ready (long-running / one-shot tasks)
+alwaysApply: false
+---
+
+# Autonomous production-ready delivery
+
+Apply when the user asks to build/ship a feature or app **end-to-end**, **without babysitting**, **long-running**, **one-shot**, or **production-ready**.
+
+## Goal
+
+Deliver a **reviewable, production-ready outcome** in one run: working code, tests green, quality gates passed, clear handoff (PR or summary). Do not stop at a partial scaffold unless blocked by a real decision only the user can make.
+
+## Operating loop (do not exit early)
+
+1. **Clarify only blockers** — Ask at most once, only for credentials, irreversible prod actions, or ambiguous product choices that change scope. Otherwise state assumptions and proceed.
+2. **Plan briefly** — Short plan + acceptance criteria. Then execute; do not wait for approval unless the user asked for a plan-only phase.
+3. **Implement in thin vertical slices** — Each slice leaves the app runnable. Respect `.cursor/rules/file-size-and-solid.mdc` (≤500 lines/file).
+4. **Verify continuously** — After each slice: typecheck/lint/tests/build (and browser check for UI). Fix before the next slice.
+5. **Harden for production** — Error handling, env config (no secrets in repo), basic security, sensible defaults, README/run instructions if missing.
+6. **Definition of Done gate** — Only stop when the checklist below is green, or you are hard-blocked.
+
+## Definition of Done (production-ready)
+
+All must be true before claiming done:
+
+- [ ] Feature works for the stated acceptance criteria
+- [ ] Automated checks relevant to the change pass locally (or in CI if available)
+- [ ] No known broken happy-path / critical edge left open
+- [ ] Files stay under the 500-line cap; structure follows SOLID/reuse
+- [ ] No secrets committed; env vars documented
+- [ ] Handoff: PR opened **or** clear summary of what changed, how to run, and residual risks
+
+## Skills to prefer
+
+Route via `.agents/skills/using-agent-skills/SKILL.md`, especially:
+
+- `spec-driven-development` / `planning-and-task-breakdown` → start
+- `incremental-implementation` + `frontend-ui-engineering` / `api-and-interface-design` / `vercel-react-best-practices` → build
+- `test-driven-development` / `browser-testing-with-devtools` → prove
+- `security-and-hardening` / `performance-optimization` → harden
+- `verification-before-completion` / `review-and-ship` → finish
+
+## Autonomy rules
+
+- Prefer action over status spam; report milestones, not every micro-step.
+- Never mark complete with failing tests/build “to fix later”.
+- Never expand scope beyond the request to chase perfection.
+- If stuck >2 attempts on the same failure: change approach, then surface a single blocker with options.
+- Do not merge to main or deploy to production unless the user explicitly asked.
+
+## How the user should launch (product)
+
+Rules guide behavior; **long runtime** comes from Cursor Cloud / Long-running Agents:
+
+1. Open [cursor.com/agents](https://cursor.com/agents) (or Cloud Agent from the IDE).
+2. Attach this repo + paste the full task + `@autonomous-production-delivery` (or enable this rule).
+3. Let it run; review the PR / artifacts when notified.
+
+Local Agent chat can follow this rule but may be interrupted if the machine sleeps or the session ends — use Cloud/Long-running for true unattended runs.

@@ -1,0 +1,20 @@
+---
+description: Use agent-skills workflows from .agents/skills for senior webapp engineering
+alwaysApply: true
+---
+
+Before non-trivial technical work on this webapp:
+
+1. Route via `.agents/skills/using-agent-skills/SKILL.md`.
+2. Read and follow the matching skill under `.agents/skills/<name>/SKILL.md`.
+3. Open `reference.md` (or linked references) in that folder when the skill points to it.
+4. Prefer project skills over guessing; the user does not need to say "read skill" each time.
+
+Phase shortcuts (webapp):
+- Requirements / idea → `interview-me`, `idea-refine`, `brainstorming`, `spec-driven-development`
+- Plan → `planning-and-task-breakdown`, `writing-plans`
+- Implement → `incremental-implementation`, `frontend-ui-engineering`, `api-and-interface-design`, `vercel-react-best-practices`, `solid`
+- Test → `test-driven-development` / `tdd`, `browser-testing-with-devtools`
+- Debug → `debugging-and-error-recovery`, `systematic-debugging`, `diagnosing-bugs`
+- Review → `code-review-and-quality`, `requesting-code-review`, `security-and-hardening`, `performance-optimization`, `web-design-guidelines`
+- Ship → `verification-before-completion`, `ci-cd-and-automation`, `shipping-and-launch`, `review-and-ship`

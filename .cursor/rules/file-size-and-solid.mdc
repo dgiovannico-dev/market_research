@@ -1,0 +1,38 @@
+---
+description: Hard cap 500 lines per file; enforce SOLID, reuse, and high-quality structure
+alwaysApply: true
+---
+
+# File size & code structure quality
+
+## Hard limit
+
+- **Never exceed 500 lines** in a single source file (implementation code).
+- Crossing ~500 lines is a design smell: the file likely mixes responsibilities and violates SOLID (especially SRP), reuse, and generalization.
+- Prefer staying well under the cap (roughly **200–350 lines** for modules with real logic).
+
+## When approaching or over the limit
+
+Do **not** keep growing the file. Refactor first:
+
+1. Split by responsibility (one reason to change per module).
+2. Extract reusable units (pure helpers, hooks, services, mappers, presentational components).
+3. Push domain rules into focused modules; keep UI/transport thin.
+4. Prefer composition over large “god” classes/components.
+
+## Quality bar
+
+- High cohesion inside a file; low coupling across files.
+- Clear public surface; hide internals.
+- Names and structure should make the module’s job obvious without reading everything.
+- New code must leave the tree *more* modular, not denser.
+
+## Exceptions (narrow)
+
+Generated artifacts, lockfiles, vendored/third-party copies, and pure data dumps may exceed 500 lines. **Application and domain code may not.**
+
+## Agent behavior
+
+- Before adding non-trivial code to a file already near 500 lines: split or extract, then implement.
+- Never “just append” past the limit to finish a task faster.
+- If a change would push a file over 500 lines, stop and propose a split plan, then execute it.
