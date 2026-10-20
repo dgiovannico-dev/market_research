@@ -1,0 +1,5 @@
+title,company,url,description,location,published_at,salary,source_job_id,job_type,tags
+Senior Java Contractor,Acme Consulting,https://example.com/jobs/java-1,"Freelance B2B Java Spring Boot contractor. Fully remote Europe. Partita IVA welcome.",Italy,2026-09-01,€600/day,sample-1,contract,"java,spring boot,kubernetes"
+Cloud Architect Freelance,Helvetic Cloud,https://example.com/jobs/cloud-1,"Looking for freelance Cloud Architect with AWS Kubernetes Terraform. Hybrid Zurich.",Switzerland,2026-09-10,CHF 900/day,sample-2,freelance,"aws,kubernetes,terraform"
+Junior React Developer,Startup GmbH,https://example.com/jobs/react-1,"Full-time permanent React TypeScript role on-site Berlin.",Germany,2026-09-12,,sample-3,full-time,"react,typescript"
+LLM Engineer B2B,AI Labs,https://example.com/jobs/llm-1,"B2B contractor for RAG LangChain Ollama evaluation. Remote worldwide.",Worldwide,2026-09-15,$120/hour,sample-4,contractor,"python,rag,langchain,ollama"

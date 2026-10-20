@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f4f7f6;
+  --fg: #0f172a;
+  --card: #ffffff;
+  --line: #d7e0dc;
+  --accent: #0f766e;
+}
+
+.dark {
+  --bg: #0b1220;
+  --fg: #e5eef5;
+  --card: #111827;
+  --line: #1f2a37;
+  --accent: #2dd4bf;
+}
+
+html,
+body {
+  background: radial-gradient(1200px 600px at 10% -10%, #c7efe8 0%, transparent 50%),
+    radial-gradient(900px 500px at 100% 0%, #dbeafe 0%, transparent 45%), var(--bg);
+  color: var(--fg);
+  min-height: 100%;
+}
+
+body {
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.card {
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+}
+
+.badge {
+  @apply inline-flex items-center rounded px-2 py-0.5 text-xs font-medium;
+  border: 1px solid var(--line);
+}
