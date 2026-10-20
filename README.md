@@ -36,9 +36,11 @@ docker compose up --build
 - API docs: http://localhost:8000/docs
 - UI: http://localhost:3000
 
+Production hardening notes: [docs/PRODUCTION.md](docs/PRODUCTION.md)
+
 ## Bootstrap data
 
-1. Open **Sources & LLM** and run **Remotive** / **Arbeitnow** (public APIs).
+1. Open **Sources** and run **Remotive** / **Arbeitnow** (public APIs).
 2. Or import sample CSV:
 
 ```bash
@@ -47,10 +49,10 @@ curl -F "file=@data/samples/jobs_sample.csv" http://localhost:8000/api/v1/import
 
 ## Classification modes
 
-- `CLASSIFICATION_MODE=rules|hybrid|llm` (default hybrid; MVP uses deterministic rules when LLM is `none`)
+- `CLASSIFICATION_MODE=rules|hybrid|llm` (default hybrid; uses deterministic rules when LLM is `none`)
 - `LLM_PROVIDER=none|ollama|vllm`
 
-Platform works fully with LLM offline.
+Platform works fully with LLM offline. Sources page can run batch LLM classify and a rules consistency evaluation stub.
 
 ## Evidence model
 
@@ -60,12 +62,20 @@ Every classification/KPI carries an evidence kind:
 
 Missing rates are stored as `NULL`, never zero.
 
-## Tests
+## Dashboards
+
+Executive · Explorer · Trends · Skills (co-occurrence) · Rates · Countries · Jobs · Profile / skill gaps · Applications · Quality · Alerts · Weekly report · Sources & LLM
+
+## Tests & smoke
 
 ```bash
 cd backend && source .venv/bin/activate
 pytest -q
+./scripts/smoke_e2e.sh
+cd ../frontend && npm run build
 ```
+
+CI runs the same backend pytest + frontend build on GitHub Actions.
 
 ## Backup / restore
 
@@ -74,29 +84,25 @@ pytest -q
 ./backend/scripts/restore_db.sh data/exports/<backup>.sql
 ```
 
-## Current MVP scope / limits
+## Production scope
 
 Implemented:
 
-- Modular backend + Next.js dashboards (Executive, Explorer, Trends, Jobs, Quality, Sources)
-- PostgreSQL schema for sources, jobs, skills, rates, snapshots, metrics, profile, alerts, audit
-- Remotive + Arbeitnow collectors
-- Manual CSV/JSON/XLSX import with column mapping defaults
-- Dedup by source id, canonical URL, description hash
-- Rules-based classification + taxonomy
-- KPI summary with definitions, sample size, limits
-- Export CSV/JSON
-- LLM provider abstraction (Ollama/vLLM/none)
-- Unsupported sources declared (`requires_credentials` / `unsupported`)
+- Modular FastAPI + Next.js analytics UI
+- PostgreSQL schema (sources, jobs, skills, rates, snapshots, metrics, profile, applications, alerts, audit)
+- Remotive + Arbeitnow collectors; CSV/JSON/XLSX import; dedup
+- Rules / hybrid / LLM classification with provider abstraction
+- KPI summary, rates, countries, co-occurrence, skill gaps, positioning recommendations
+- Applications / outcomes, alert evaluate, in-process scheduler (`ENABLE_SCHEDULER`)
+- Weekly report JSON, rate limiting, optional `API_KEY`, structured logs
+- Smoke script + CI
 
-Not fully implemented yet (planned next slices):
+Explicit residual limits (not bugs):
 
-- Personal applications outcomes UI/API depth
-- Alert scheduler workers
-- LLM evaluation dataset UI
-- Co-occurrence graph viz
-- PDF reports
-- Authorized connectors for LinkedIn/Malt/Indeed/Upwork (need credentials/partnerships)
+- LinkedIn / Malt / Indeed / Upwork need authorized credentials or partnerships
+- In-memory rate limit and scheduler are single-node (use external cron for multi-replica)
+- LLM evaluation is rules self-consistency (no gold-label F1 UI yet)
+- Weekly report is JSON (PDF export not shipped)
 
 ## Legal / ethics
 

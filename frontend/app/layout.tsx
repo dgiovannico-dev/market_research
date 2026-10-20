@@ -9,11 +9,18 @@ export const metadata: Metadata = {
 
 const nav = [
   { href: "/", label: "Executive" },
-  { href: "/explorer", label: "Market Explorer" },
-  { href: "/trends", label: "Technology Trends" },
-  { href: "/jobs", label: "Job Explorer" },
-  { href: "/quality", label: "Data Quality" },
-  { href: "/sources", label: "Sources & LLM" },
+  { href: "/explorer", label: "Explorer" },
+  { href: "/trends", label: "Trends" },
+  { href: "/skills", label: "Skills" },
+  { href: "/rates", label: "Rates" },
+  { href: "/countries", label: "Countries" },
+  { href: "/jobs", label: "Jobs" },
+  { href: "/profile", label: "Profile" },
+  { href: "/applications", label: "Applications" },
+  { href: "/quality", label: "Quality" },
+  { href: "/alerts", label: "Alerts" },
+  { href: "/report", label: "Report" },
+  { href: "/sources", label: "Sources" },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

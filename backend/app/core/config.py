@@ -19,7 +19,10 @@ class Settings(BaseSettings):
     vllm_model: str = ""
     fx_hours_per_day: float = 8.0
     log_level: str = "INFO"
-    methodology_version: str = "1.0.0"
+    methodology_version: str = "1.1.0"
+    enable_scheduler: bool = False
+    scheduler_interval_seconds: int = 3600
+    rate_limit_per_minute: int = 180
 
     @property
     def cors_origins_list(self) -> list[str]:

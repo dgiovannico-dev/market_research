@@ -65,6 +65,12 @@ export const api = {
   trends: (days = 90) => getJSON<{ items: Record<string, unknown>[] }>(`/api/v1/market/trends?days=${days}`),
   sources: () => getJSON<{ items: Record<string, unknown>[] }>("/api/v1/sources"),
   llmStatus: () => getJSON<Record<string, unknown>>("/api/v1/llm/status"),
+  cooccurrence: (days = 90, minSupport = 2) =>
+    getJSON<{
+      jobs_analyzed: number;
+      period_days: number;
+      items: Record<string, unknown>[];
+    }>(`/api/v1/market/skills/cooccurrence?days=${days}&min_support=${minSupport}`),
   runSource: async (sourceId: number, query?: string) => {
     const q = query ? `?query=${encodeURIComponent(query)}` : "";
     const res = await fetch(`${API_URL}/api/v1/sources/${sourceId}/run${q}`, { method: "POST" });

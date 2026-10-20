@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.classification.taxonomy import TAXONOMY
 from app.collectors.registry import COLLECTORS, UNSUPPORTED_SOURCES
-from app.storage.models import SearchQuery, Source, Technology, UserProfile
+from app.storage.models import SearchQuery, Source, Technology, UserProfile, UserSkill
 
 
 def seed_reference_data(db: Session) -> None:
@@ -80,19 +80,34 @@ def seed_reference_data(db: Session) -> None:
                 )
             )
 
-    if not db.scalar(select(UserProfile).limit(1)):
-        db.add(
-            UserProfile(
-                display_name="Default IT Freelance",
-                years_experience=10,
-                residence_country="IT",
-                languages=["it", "en"],
-                remote_preference="remote",
-                min_rate_amount=500,
-                target_rate_amount=650,
-                rate_unit="day",
-                rate_currency="EUR",
-            )
+    profile = db.scalar(select(UserProfile).limit(1))
+    if not profile:
+        profile = UserProfile(
+            display_name="Default IT Freelance",
+            years_experience=10,
+            residence_country="IT",
+            languages=["it", "en"],
+            remote_preference="remote",
+            min_rate_amount=500,
+            target_rate_amount=650,
+            rate_unit="day",
+            rate_currency="EUR",
         )
+        db.add(profile)
+        db.flush()
+
+    if not db.scalar(select(UserSkill).where(UserSkill.profile_id == profile.id).limit(1)):
+        for name in ("Java", "Spring Boot", "Kubernetes", "Python", "PostgreSQL"):
+            tech = db.scalar(select(Technology).where(Technology.canonical_name == name))
+            if tech:
+                db.add(
+                    UserSkill(
+                        profile_id=profile.id,
+                        technology_id=tech.id,
+                        level="advanced",
+                        years=5,
+                        verifiable=True,
+                    )
+                )
 
     db.commit()

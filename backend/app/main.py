@@ -3,11 +3,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.market_extra import router as market_extra_router
+from app.api.v1.ops import router as ops_router
+from app.api.v1.profile_apps import router as profile_apps_router
 from app.api.v1.router import router as v1_router
 from app.core.config import get_settings
 from app.core.logging import setup_logging
-from app.storage.db import Base, SessionLocal, engine
+from app.core.middleware import SimpleRateLimitMiddleware
+from app.scheduler.runner import start_background_scheduler
 from app.storage import models  # noqa: F401
+from app.storage.db import Base, SessionLocal, engine
 from app.storage.seed import seed_reference_data
 
 
@@ -20,7 +25,13 @@ async def lifespan(_: FastAPI):
         seed_reference_data(db)
     finally:
         db.close()
+    settings = get_settings()
+    task = None
+    if settings.enable_scheduler:
+        task = start_background_scheduler(settings.scheduler_interval_seconds)
     yield
+    if task:
+        task.cancel()
 
 
 def create_app() -> FastAPI:
@@ -34,6 +45,7 @@ def create_app() -> FastAPI:
         ),
         lifespan=lifespan,
     )
+    app.add_middleware(SimpleRateLimitMiddleware, requests_per_minute=settings.rate_limit_per_minute)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
@@ -42,6 +54,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(v1_router)
+    app.include_router(market_extra_router)
+    app.include_router(profile_apps_router)
+    app.include_router(ops_router)
 
     @app.get("/")
     def root() -> dict[str, str]:

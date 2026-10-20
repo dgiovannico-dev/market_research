@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { LlmOpsButtons } from "@/components/LlmOpsButtons";
 import { RunSourceButton } from "@/components/RunSourceButton";
 
 export default async function SourcesPage() {
@@ -22,6 +23,7 @@ export default async function SourcesPage() {
           LLM provider: <strong>{provider}</strong> · healthy: <strong>{healthy}</strong> · mode:{" "}
           <strong>{mode}</strong>
         </div>
+        <LlmOpsButtons />
       </section>
 
       <section className="grid gap-3">

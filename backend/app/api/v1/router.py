@@ -16,7 +16,6 @@ from app.collectors.registry import get_collector
 from app.core.config import get_settings
 from app.ingestion.import_files import import_tabular
 from app.ingestion.service import ingest_raw_jobs
-from app.llm.provider import get_llm_provider
 from app.storage.db import get_db
 from app.storage.models import CollectionRun, Job, SearchQuery, Source, UserProfile
 from app.storage.seed import seed_reference_data
@@ -69,12 +68,11 @@ def market_jobs(
 
 @router.get("/jobs/{job_id}")
 def get_job(job_id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
-    result = kpis.list_jobs(db, skip=0, limit=1)
     job = db.get(Job, job_id)
-    if not job:
+    if not job or not job.is_canonical:
         raise HTTPException(404, "Job not found")
-    detailed = kpis.list_jobs(db, skip=0, limit=200)
-    for item in detailed["items"]:
+    page = kpis.list_jobs(db, skip=0, limit=500)
+    for item in page["items"]:
         if item["id"] == job_id:
             return item
     raise HTTPException(404, "Job not found")
@@ -248,18 +246,6 @@ def search_queries(db: Session = Depends(get_db)) -> dict[str, Any]:
             }
             for q in rows
         ]
-    }
-
-
-@router.get("/llm/status")
-async def llm_status() -> dict[str, Any]:
-    settings = get_settings()
-    provider = get_llm_provider()
-    health = await provider.health()
-    return {
-        "classification_mode": settings.classification_mode,
-        "configured_provider": settings.llm_provider,
-        **health,
     }
 
 
