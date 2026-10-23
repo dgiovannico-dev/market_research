@@ -11,6 +11,7 @@ from app.collectors.base import BaseCollector, CollectorResult, RawJob
 class RemotiveCollector(BaseCollector):
     name = "Remotive"
     source_key = "remotive"
+    collection_mode = "dump"
     base_url = "https://remotive.com/api/remote-jobs"
 
     async def collect(self, query: Optional[str] = None) -> CollectorResult:
@@ -34,6 +35,8 @@ class RemotiveCollector(BaseCollector):
                     published = datetime.fromisoformat(
                         item["publication_date"].replace("Z", "+00:00")
                     )
+                    if published.tzinfo is None:
+                        published = published.replace(tzinfo=timezone.utc)
                 except ValueError:
                     published = None
                     errors.append(f"invalid date for job {item.get('id')}")

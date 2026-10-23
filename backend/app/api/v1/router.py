@@ -10,12 +10,14 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.analytics import kpis
 from app.api.deps import verify_api_key
-from app.collectors.registry import get_collector
+from app.api.v1.query_params import min_evidence_query, parse_lens_params
+from app.application.collection.run_source import run_source as run_source_uc
+from app.application.market_queries import kpis
+from app.collectors.registry import CREDENTIALED_SCAFFOLDS, get_collector
 from app.core.config import get_settings
 from app.ingestion.import_files import import_tabular
-from app.ingestion.service import ingest_raw_jobs
+from app.sources.insert_evidence import empty_insert_evidence, insert_evidence_by_source_id
 from app.storage.db import get_db
 from app.storage.models import CollectionRun, Job, SearchQuery, Source, UserProfile
 from app.storage.seed import seed_reference_data
@@ -25,7 +27,15 @@ router = APIRouter(prefix="/api/v1", dependencies=[Depends(verify_api_key)])
 
 @router.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "service": "fmi-api"}
+    settings = get_settings()
+    return {
+        "status": "ok",
+        "service": "fmi-api",
+        "methodology_version": settings.methodology_version,
+        "public_live": "/livez",
+        "public_ready": "/readyz",
+        "public_ready_alias": "/healthz",
+    }
 
 
 @router.post("/admin/seed")
@@ -37,23 +47,46 @@ def seed(db: Session = Depends(get_db)) -> dict[str, str]:
 @router.get("/dashboard/summary")
 def dashboard_summary(
     days: int = Query(30, ge=1, le=365),
-    country_code: Optional[str] = None,
+    country_code: Optional[str] = Query(
+        None,
+        description="ISO country code or CSV (e.g. IT,CH)",
+    ),
+    lens: Optional[str] = Query(
+        None,
+        description=(
+            "Omit for all jobs (backward compatible); "
+            "market | focus | compare for Demand Compass."
+        ),
+    ),
+    query_ids: Optional[list[str]] = Query(
+        None,
+        description="Focus intent ids (repeated and/or comma-separated).",
+    ),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    return kpis.dashboard_summary(db, days=days, country_code=country_code)
+    lens_name, qids = parse_lens_params(lens, query_ids)
+    return kpis.dashboard_summary(
+        db, days=days, country_code=country_code, lens=lens_name, query_ids=qids
+    )
 
 
 @router.get("/market/jobs")
 def market_jobs(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
-    country_code: Optional[str] = None,
+    country_code: Optional[str] = Query(
+        None,
+        description="ISO country code or CSV (e.g. IT,CH)",
+    ),
     contract_type: Optional[str] = None,
     remote_type: Optional[str] = None,
     technology: Optional[str] = None,
     q: Optional[str] = None,
+    lens: Optional[str] = Query(None, description="Omit for all jobs; market|focus|compare."),
+    query_ids: Optional[list[str]] = Query(None),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
+    lens_name, qids = parse_lens_params(lens, query_ids)
     return kpis.list_jobs(
         db,
         skip=skip,
@@ -63,6 +96,8 @@ def market_jobs(
         remote_type=remote_type,
         technology=technology,
         q=q,
+        lens=lens_name,
+        query_ids=qids,
     )
 
 
@@ -82,27 +117,85 @@ def get_job(job_id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
 def market_trends(
     days: int = Query(90, ge=7, le=365),
     min_support: int = Query(3, ge=1),
+    country_code: Optional[str] = Query(
+        None,
+        description="ISO country code or CSV (e.g. IT,CH)",
+    ),
+    lens: Optional[str] = Query(None, description="Omit for all jobs; market|focus|compare."),
+    query_ids: Optional[list[str]] = Query(None),
+    min_evidence: Optional[str] = Query(
+        None,
+        description="Corpus gate: standard (default), all, or thin.",
+    ),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    return kpis.technology_trends(db, days=days, min_support=min_support)
+    lens_name, qids = parse_lens_params(lens, query_ids)
+    return kpis.technology_trends(
+        db,
+        days=days,
+        min_support=min_support,
+        country_code=country_code,
+        lens=lens_name,
+        query_ids=qids,
+        min_evidence=min_evidence_query(min_evidence),
+    )
 
 
 @router.get("/market/technologies")
 def market_technologies(
     days: int = Query(90, ge=7, le=365),
+    country_code: Optional[str] = Query(
+        None,
+        description="ISO country code or CSV (e.g. IT,CH)",
+    ),
+    lens: Optional[str] = Query(None, description="Omit for all jobs; market|focus|compare."),
+    query_ids: Optional[list[str]] = Query(None),
+    min_evidence: Optional[str] = Query(
+        None,
+        description="Corpus gate: standard (default), all, or thin.",
+    ),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    return kpis.technology_trends(db, days=days, min_support=1)
+    lens_name, qids = parse_lens_params(lens, query_ids)
+    return kpis.technology_trends(
+        db,
+        days=days,
+        min_support=1,
+        country_code=country_code,
+        lens=lens_name,
+        query_ids=qids,
+        min_evidence=min_evidence_query(min_evidence),
+    )
 
 
 @router.get("/market/quality")
-def market_quality(db: Session = Depends(get_db)) -> dict[str, Any]:
-    return kpis.data_quality_report(db)
+def market_quality(
+    country_code: Optional[str] = Query(
+        None,
+        description="ISO country code or CSV (e.g. IT,CH)",
+    ),
+    lens: Optional[str] = Query(None, description="Omit for all jobs; market|focus|compare."),
+    query_ids: Optional[list[str]] = Query(None),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    lens_name, qids = parse_lens_params(lens, query_ids)
+    return kpis.data_quality_report(
+        db, country_code=country_code, lens=lens_name, query_ids=qids
+    )
 
 
 @router.get("/sources")
 def list_sources(db: Session = Depends(get_db)) -> dict[str, Any]:
     sources = db.scalars(select(Source).order_by(Source.name)).all()
+    evidence = insert_evidence_by_source_id(db)
+    # Demoted stubs / test fixtures stay in DB for FK safety but are not ops-facing.
+    visible = [
+        s
+        for s in sources
+        if not (s.connector_type or "").startswith("dup_")
+        and (s.connector_type or "") not in {"test", "fixture", "freework", "freelancermap"}
+        and not (s.name or "").startswith(("bf_src_", "dedup_empty_url_", "manual_empty", "clip-emp-"))
+    ]
     return {
         "items": [
             {
@@ -110,12 +203,25 @@ def list_sources(db: Session = Depends(get_db)) -> dict[str, Any]:
                 "name": s.name,
                 "connector_type": s.connector_type,
                 "connector_status": s.connector_status,
+                "verification_status": getattr(s, "verification_status", None),
+                "catalog_id": getattr(s, "catalog_id", None),
+                "category": getattr(s, "category", None),
+                "access_mode": getattr(s, "access_mode", None),
                 "enabled": s.enabled,
+                "is_credentialed_scaffold": (s.connector_type or "") in CREDENTIALED_SCAFFOLDS,
                 "coverage_notes": s.coverage_notes,
+                "docs_url": s.docs_url,
+                "base_url": s.base_url,
                 "last_success_at": s.last_success_at.isoformat() if s.last_success_at else None,
+                "last_validated_at": (
+                    s.last_validated_at.isoformat()
+                    if getattr(s, "last_validated_at", None)
+                    else None
+                ),
                 "last_error": s.last_error,
+                **evidence.get(s.id, empty_insert_evidence()),
             }
-            for s in sources
+            for s in visible
         ]
     }
 
@@ -138,42 +244,53 @@ async def run_source(
     if not collector:
         raise HTTPException(400, "No collector implementation for this source")
 
-    started = datetime.now(timezone.utc)
-    run = CollectionRun(source_id=source.id, started_at=started, status="running")
-    db.add(run)
-    db.commit()
-    db.refresh(run)
-
-    result = await collector.collect(query=query)
-    stats = ingest_raw_jobs(
+    result = await run_source_uc(
         db,
-        source_id=source.id,
-        raw_jobs=result.records,
+        source=source,
+        collector=collector,
+        query=query,
         collection_method="api",
     )
-    completed = datetime.now(timezone.utc)
-    run.completed_at = completed
-    run.status = "partial" if result.errors else "succeeded"
-    run.pages_scanned = result.pages_scanned
-    run.records_received = len(result.records)
-    run.records_inserted = stats["inserted"]
-    run.records_updated = stats["updated"]
-    run.duplicates_detected = stats["duplicates"]
-    run.errors_count = stats["errors"] + len(result.errors)
-    run.error_summary = "; ".join(result.errors)[:2000] if result.errors else None
-    run.duration_seconds = (completed - started).total_seconds()
-    source.last_success_at = completed
-    source.last_error = run.error_summary
-    if run.error_summary:
-        source.last_error_at = completed
-    db.commit()
-    return {
-        "collection_run_id": run.id,
-        "status": run.status,
-        "records_received": run.records_received,
-        **stats,
-        "collector_errors": result.errors,
+    if result.get("error"):
+        raise HTTPException(502, result["error"])
+    if result.get("skipped"):
+        return {
+            "status": "skipped",
+            "reason": result.get("reason"),
+            "verification_status": source.verification_status,
+        }
+
+    payload: dict[str, Any] = {
+        "collection_run_id": result.get("run_id"),
+        "status": result.get("status"),
+        "records_received": result.get("records_received"),
+        "inserted": result.get("inserted", 0),
+        "updated": result.get("updated", 0),
+        "duplicates": result.get("duplicates", 0),
+        "errors": result.get("errors", 0),
+        "collector_errors": result.get("collector_errors") or [],
+        "verification_status": source.verification_status,
     }
+    for key in ("expired_stale", "expired_unseen", "dump_complete"):
+        if key in result:
+            payload[key] = result[key]
+    key = source.connector_type or ""
+    if (
+        key in CREDENTIALED_SCAFFOLDS
+        and result.get("status") == "succeeded"
+        and (result.get("inserted") or 0) > 0
+        and source.verification_status != "ACTIVE"
+    ):
+        payload["next_steps"] = {
+            "promote_db": (
+                f"python scripts/promote_source_active.py --connector-key {key}"
+            ),
+            "note": (
+                "Promotes Source.verification_status to ACTIVE only after insert evidence. "
+                "Also update generate_source_catalog.py + regenerate catalog.json."
+            ),
+        }
+    return payload
 
 
 @router.get("/collection-runs")

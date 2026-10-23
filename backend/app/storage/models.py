@@ -1,6 +1,15 @@
 """Aggregate model imports for Alembic and application use."""
 
-from app.storage.models_core import CollectionRun, Job, SearchQuery, Source
+from app.storage.models_core import (
+    CollectionRun,
+    CrawlerTick,
+    Job,
+    JobIntentMatch,
+    SearchQuery,
+    Source,
+    SourceCredential,
+    SourceVerification,
+)
 from app.storage.models_skills import (
     DuplicateGroup,
     JobRate,
@@ -21,8 +30,12 @@ from app.storage.models_user import (
 
 __all__ = [
     "Source",
+    "SourceCredential",
+    "SourceVerification",
     "SearchQuery",
+    "JobIntentMatch",
     "CollectionRun",
+    "CrawlerTick",
     "Job",
     "Technology",
     "JobSkill",

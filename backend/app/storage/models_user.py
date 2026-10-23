@@ -41,6 +41,7 @@ class UserProfile(Base):
             "learning_cost": 0.05,
         },
     )
+    dashboard_prefs: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

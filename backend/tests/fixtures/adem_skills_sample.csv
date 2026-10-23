@@ -1,0 +1,6 @@
+vacancy_id,skill,skill_uri,positions,month,year,canton,occupation_code,occupation_label,nace_code,nace_label
+v1,Python,http://data.europa.eu/esco/skill/python,2,3,2026,Luxembourg,M1805,Études et développement informatique,J6201,Programmation informatique
+v1,Docker,http://data.europa.eu/esco/skill/docker,2,3,2026,Luxembourg,M1805,Études et développement informatique,J6201,Programmation informatique
+v2,Python,http://data.europa.eu/esco/skill/python,1,4,2026,Esch-sur-Alzette,M1805,Études et développement informatique,J6201,Programmation informatique
+v3,,http://example.invalid/empty,1,4,2026,Luxembourg,M1202,Direction d'entreprise,G4711,Commerce de détail
+v4,Accounting,http://data.europa.eu/esco/skill/accounting,3,2,2026,Diekirch,M1202,Direction d'entreprise,K6419,Autres intermédiations monétaires

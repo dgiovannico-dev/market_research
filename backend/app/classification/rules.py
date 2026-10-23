@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from app.classification.language_rules import extract_language_requirements
 from app.classification.taxonomy import build_alias_index
 from app.normalization.rates import parse_rate_text
 
@@ -33,11 +34,37 @@ SENIORITY_PATTERNS = [
 COUNTRY_HINTS = {
     "italy": "IT",
     "italia": "IT",
+    "milan": "IT",
+    "milano": "IT",
+    "rome": "IT",
+    "roma": "IT",
+    "turin": "IT",
+    "torino": "IT",
+    "bologna": "IT",
+    "naples": "IT",
+    "napoli": "IT",
+    "florence": "IT",
+    "firenze": "IT",
     "switzerland": "CH",
     "schweiz": "CH",
     "suisse": "CH",
+    "svizzera": "CH",
     "zurich": "CH",
     "zürich": "CH",
+    "basel": "CH",
+    "bern": "CH",
+    "berne": "CH",
+    "geneva": "CH",
+    "genève": "CH",
+    "geneve": "CH",
+    "lausanne": "CH",
+    "lugano": "CH",
+    "winterthur": "CH",
+    "lucerne": "CH",
+    "luzern": "CH",
+    "st. gallen": "CH",
+    "st gallen": "CH",
+    "sankt gallen": "CH",
     "germany": "DE",
     "deutschland": "DE",
     "berlin": "DE",
@@ -50,16 +77,108 @@ COUNTRY_HINTS = {
     "netherlands": "NL",
     "amsterdam": "NL",
     "belgium": "BE",
+    "belgique": "BE",
     "luxembourg": "LU",
+    "bulgaria": "BG",
+    "sofia": "BG",
+    "australia": "AU",
+    "sydney": "AU",
+    "melbourne": "AU",
+    "brisbane": "AU",
+    "perth": "AU",
+    "adelaide": "AU",
+    "canberra": "AU",
+    "sweden": "SE",
+    "sverige": "SE",
+    "stockholm": "SE",
+    "göteborg": "SE",
+    "goteborg": "SE",
+    "malmö": "SE",
+    "malmo": "SE",
+    "norway": "NO",
+    "norge": "NO",
+    "oslo": "NO",
+    "finland": "FI",
+    "suomi": "FI",
+    "helsinki": "FI",
+    "denmark": "DK",
+    "danmark": "DK",
+    "copenhagen": "DK",
+    "københavn": "DK",
+    "poland": "PL",
+    "polska": "PL",
+    "warsaw": "PL",
+    "warszawa": "PL",
+    "czech": "CZ",
+    "czechia": "CZ",
+    "czech republic": "CZ",
+    "česko": "CZ",
+    "prague": "CZ",
+    "praha": "CZ",
+    "ukraine": "UA",
+    "kyiv": "UA",
+    "kiev": "UA",
+    "serbia": "RS",
+    "belgrade": "RS",
+    "croatia": "HR",
+    "zagreb": "HR",
+    "romania": "RO",
+    "bucharest": "RO",
+    "kenya": "KE",
+    "nairobi": "KE",
+    "singapore": "SG",
+    "japan": "JP",
+    "tokyo": "JP",
+    "korea": "KR",
+    "south korea": "KR",
+    "seoul": "KR",
+    "한국": "KR",
+    "india": "IN",
+    "bangalore": "IN",
+    "bengaluru": "IN",
+    "hyderabad": "IN",
+    "philippines": "PH",
+    "manila": "PH",
+    "chile": "CL",
+    "santiago": "CL",
     "ireland": "IE",
     "dublin": "IE",
     "spain": "ES",
+    "españa": "ES",
+    "sevilla": "ES",
+    "madrid": "ES",
+    "barcelona": "ES",
+    "valencia": "ES",
     "portugal": "PT",
+    "lisboa": "PT",
+    "lisbon": "PT",
+    "porto": "PT",
+    "brazil": "BR",
+    "brasil": "BR",
+    "angola": "AO",
+    "canada": "CA",
+    "ontario": "CA",
+    "quebec": "CA",
+    "québec": "CA",
+    "british columbia": "CA",
+    "alberta": "CA",
+    "manitoba": "CA",
+    "saskatchewan": "CA",
+    "nova scotia": "CA",
     "united kingdom": "GB",
     "uk": "GB",
     "london": "GB",
     "united states": "US",
     "usa": "US",
+    "remote us": "US",
+    "san francisco": "US",
+    "new york": "US",
+    "seattle": "US",
+    "austin": "US",
+    "boston": "US",
+    "chicago": "US",
+    "los angeles": "US",
+    "california": "US",
     "worldwide": "WW",
     "anywhere": "WW",
 }
@@ -90,7 +209,11 @@ class ClassificationResult:
     technologies: list[dict] = field(default_factory=list)
     rate: dict | None = None
     role_family: str | None = None
+    language_requirements: list[str] = field(default_factory=list)
     classification_version: str = "rules-1.0.0"
+
+
+_ISO2_PAREN = re.compile(r"\(([A-Za-z]{2})\)")
 
 
 def _detect_country(location: str | None, description: str | None) -> str:
@@ -98,6 +221,12 @@ def _detect_country(location: str | None, description: str | None) -> str:
     for hint, code in COUNTRY_HINTS.items():
         if re.search(rf"\b{re.escape(hint)}\b", blob):
             return code
+    # Collectors often append "City (ISO2)" — honor explicit paren codes.
+    match = _ISO2_PAREN.search(location or "")
+    if match:
+        code = match.group(1).upper()
+        if code.isalpha() and len(code) == 2:
+            return "GB" if code == "UK" else code
     return "unknown"
 
 
@@ -203,4 +332,10 @@ def classify_job(
             "extraction_method": "rules",
             "evidence_kind": "extracted",
         }
+
+    result.language_requirements = extract_language_requirements(
+        title=title,
+        description=description,
+        tags=tags,
+    )
     return result

@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 IN="${1:?Usage: restore_db.sh <backup.sql>}"
-PGPASSWORD="${POSTGRES_PASSWORD:-fmi_dev_password_change_me}" \
-  psql -h "${POSTGRES_HOST:-localhost}" -U "${POSTGRES_USER:-fmi}" -d "${POSTGRES_DB:-fmi}" < "$IN"
+DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+PSQL_CMD="$("$DIR/psql_cmd.sh")"
+# shellcheck disable=SC2086
+eval "$PSQL_CMD" -v ON_ERROR_STOP=1 < "$IN"
 echo "Restore complete from $IN"

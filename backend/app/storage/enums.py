@@ -15,8 +15,25 @@ class JobStatus(str, enum.Enum):
     active_unverified = "active_unverified"
     stale = "stale"
     closed = "closed"
+    closed_stale = "closed_stale"
     removed_from_source = "removed_from_source"
     unknown = "unknown"
+
+
+# Soft-expired / closed jobs stay in DB for audit but leave the DSS corpus.
+# Shared kernel: ingestion + analytics + research must import this — not each other.
+CLOSED_JOB_STATUSES: tuple[str, ...] = (
+    JobStatus.closed.value,
+    JobStatus.closed_stale.value,
+    JobStatus.removed_from_source.value,
+)
+
+
+class EvidenceTier(str, enum.Enum):
+    """DSS corpus quality: thin = title/snippet/synthetic; standard = usable body."""
+
+    standard = "standard"
+    thin = "thin"
 
 
 class ContractType(str, enum.Enum):

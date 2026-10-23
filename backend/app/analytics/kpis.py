@@ -1,51 +1,40 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
-from sqlalchemy import Select, func, or_, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import Select, func, select
+from sqlalchemy.orm import Session
 
+from app.analytics.country_filter import country_codes_clause, parse_country_codes
+from app.analytics.coverage_notes import attach_coverage_notes, coverage_notes_for_slice
+from app.analytics.evidence_gate import (
+    DEFAULT_MIN_EVIDENCE,
+    count_thin_in_query,
+    evidence_meta,
+    parse_min_evidence,
+)
+from app.analytics.job_query import base_job_query
+from app.analytics.jobs_daily import jobs_per_day_series
+from app.analytics.jobs_list import list_jobs
+from app.analytics.lenses import compare_counts, parse_lens, resolve_job_id_subquery
+from app.analytics.quality import data_quality_report
 from app.core.config import get_settings
+from app.storage.enums import JobStatus
 from app.storage.models import Job, JobRate, JobSkill, Source, Technology
 
+_CLOSED = (
+    JobStatus.closed.value,
+    JobStatus.closed_stale.value,
+    JobStatus.removed_from_source.value,
+)
 
-def _base_job_query(
-    *,
-    date_from: Optional[datetime] = None,
-    date_to: Optional[datetime] = None,
-    country_code: Optional[str] = None,
-    contract_type: Optional[str] = None,
-    remote_type: Optional[str] = None,
-    technology_id: Optional[int] = None,
-    seniority: Optional[str] = None,
-    source_id: Optional[int] = None,
-    verified_contract_only: bool = False,
-) -> Select:
-    q = select(Job).where(Job.is_canonical.is_(True))
-    if date_from:
-        q = q.where(Job.published_at >= date_from)
-    if date_to:
-        q = q.where(Job.published_at <= date_to)
-    if country_code and country_code != "ALL":
-        q = q.where(Job.country_code == country_code)
-    if contract_type and contract_type != "ALL":
-        q = q.where(Job.contract_type == contract_type)
-    if remote_type and remote_type != "ALL":
-        q = q.where(Job.remote_type == remote_type)
-    if seniority:
-        q = q.where(Job.seniority == seniority)
-    if source_id:
-        q = q.where(Job.source_id == source_id)
-    if verified_contract_only:
-        q = q.where(
-            Job.contract_type.in_(["freelance", "b2b", "contractor"]),
-            Job.contract_type_confidence.is_not(None),
-            Job.contract_type_confidence >= 0.7,
-        )
-    if technology_id:
-        q = q.join(JobSkill).where(JobSkill.technology_id == technology_id)
-    return q
+__all__ = [
+    "dashboard_summary",
+    "list_jobs",
+    "technology_trends",
+    "data_quality_report",
+]
 
 
 def _metric(
@@ -77,48 +66,110 @@ def _metric(
     }
 
 
+def _lens_where(job_id_subq: Optional[Select]):
+    return (Job.id.in_(job_id_subq),) if job_id_subq is not None else ()
+
+
 def dashboard_summary(
     db: Session,
     *,
     days: int = 30,
     country_code: Optional[str] = None,
+    lens: Optional[str] = None,
+    query_ids: Optional[Sequence[int]] = None,
 ) -> dict[str, Any]:
+    """Dashboard KPIs. ``lens=None`` = all jobs; pass ``market`` for Demand Compass."""
+    lens_name = parse_lens(lens)
+    codes = parse_country_codes(country_code)
+    country_clause = country_codes_clause(codes)
+    if lens_name == "compare":
+        counts = compare_counts(
+            db, query_ids=query_ids, days=days, country_code=country_code
+        )
+        market = dashboard_summary(
+            db, days=days, country_code=country_code, lens="market", query_ids=query_ids
+        )
+        focus = dashboard_summary(
+            db, days=days, country_code=country_code, lens="focus", query_ids=query_ids
+        )
+        # Lift shared / market-side fields so clients can read top-level without
+        # special-casing compare (sources / period are not lens-split; guided UI
+        # still expects kpis / growth_status / top_* at the root).
+        return {
+            "lens": "compare",
+            "query_ids": list(query_ids) if query_ids else None,
+            "countries": codes or None,
+            **counts,
+            "period_days": market.get("period_days", days),
+            "generated_at": market.get("generated_at"),
+            "disclaimer": market.get("disclaimer"),
+            "growth_status": market.get("growth_status"),
+            "kpis": market.get("kpis") or [],
+            "jobs_per_day": market.get("jobs_per_day") or [],
+            "top_technologies": market.get("top_technologies") or [],
+            "top_countries": market.get("top_countries") or [],
+            "data_quality": market.get("data_quality"),
+            "coverage_notes": market.get("coverage_notes") or [],
+            "market": market,
+            "focus": focus,
+        }
+
+    job_id_subq = resolve_job_id_subquery(db, lens_name, query_ids)
     now = datetime.now(timezone.utc)
     date_from = now - timedelta(days=days)
     prev_from = date_from - timedelta(days=days)
 
-    current_q = _base_job_query(date_from=date_from, date_to=now, country_code=country_code)
-    prev_q = _base_job_query(date_from=prev_from, date_to=date_from, country_code=country_code)
+    current_q = base_job_query(
+        date_from=date_from, date_to=now, country_codes=codes, job_id_subq=job_id_subq
+    )
+    prev_q = base_job_query(
+        date_from=prev_from, date_to=date_from, country_codes=codes, job_id_subq=job_id_subq
+    )
 
     unique_jobs = db.scalar(select(func.count()).select_from(current_q.subquery())) or 0
     prev_jobs = db.scalar(select(func.count()).select_from(prev_q.subquery())) or 0
 
-    freelance_q = _base_job_query(
+    freelance_q = base_job_query(
         date_from=date_from,
         date_to=now,
-        country_code=country_code,
+        country_codes=codes,
         verified_contract_only=True,
+        job_id_subq=job_id_subq,
     )
     freelance_verified = db.scalar(select(func.count()).select_from(freelance_q.subquery())) or 0
 
-    with_rate = db.scalar(
-        select(func.count(func.distinct(JobRate.job_id)))
-        .select_from(JobRate)
-        .join(Job)
-        .where(
-            Job.is_canonical.is_(True),
-            Job.published_at >= date_from,
-            Job.published_at <= now,
+    rate_conds = [
+        Job.is_canonical.is_(True),
+        Job.published_at >= date_from,
+        Job.published_at <= now,
+        *_lens_where(job_id_subq),
+    ]
+    if country_clause is not None:
+        rate_conds.append(country_clause)
+    with_rate = (
+        db.scalar(
+            select(func.count(func.distinct(JobRate.job_id)))
+            .select_from(JobRate)
+            .join(Job)
+            .where(*rate_conds)
         )
-    ) or 0
+        or 0
+    )
 
-    remote_count = db.scalar(
-        select(func.count()).select_from(
-            _base_job_query(
-                date_from=date_from, date_to=now, country_code=country_code, remote_type="remote"
-            ).subquery()
+    remote_count = (
+        db.scalar(
+            select(func.count()).select_from(
+                base_job_query(
+                    date_from=date_from,
+                    date_to=now,
+                    country_codes=codes,
+                    remote_type="remote",
+                    job_id_subq=job_id_subq,
+                ).subquery()
+            )
         )
-    ) or 0
+        or 0
+    )
 
     growth = None
     growth_status = "ok"
@@ -127,20 +178,35 @@ def dashboard_summary(
     else:
         growth = ((unique_jobs - prev_jobs) / prev_jobs) * 100.0
 
-    # Top technologies
+    tech_conds = [
+        Job.is_canonical.is_(True),
+        Job.published_at >= date_from,
+        Job.published_at <= now,
+        *_lens_where(job_id_subq),
+    ]
+    if country_clause is not None:
+        tech_conds.append(country_clause)
     tech_rows = db.execute(
         select(Technology.canonical_name, func.count(JobSkill.id))
         .join(JobSkill, JobSkill.technology_id == Technology.id)
         .join(Job, Job.id == JobSkill.job_id)
-        .where(Job.is_canonical.is_(True), Job.published_at >= date_from, Job.published_at <= now)
+        .where(*tech_conds)
         .group_by(Technology.canonical_name)
         .order_by(func.count(JobSkill.id).desc())
         .limit(10)
     ).all()
 
+    country_conds = [
+        Job.is_canonical.is_(True),
+        Job.published_at >= date_from,
+        Job.published_at <= now,
+        *_lens_where(job_id_subq),
+    ]
+    if country_clause is not None:
+        country_conds.append(country_clause)
     country_rows = db.execute(
         select(Job.country_code, func.count(Job.id))
-        .where(Job.is_canonical.is_(True), Job.published_at >= date_from, Job.published_at <= now)
+        .where(*country_conds)
         .group_by(Job.country_code)
         .order_by(func.count(Job.id).desc())
         .limit(10)
@@ -149,13 +215,29 @@ def dashboard_summary(
     sources = db.scalars(select(Source)).all()
     last_success = max((s.last_success_at for s in sources if s.last_success_at), default=None)
 
-    return {
+    jobs_per_day = (
+        jobs_per_day_series(
+            db,
+            date_from=date_from,
+            date_to=now,
+            country_codes=codes,
+            job_id_subq=job_id_subq,
+        )
+        if unique_jobs
+        else []
+    )
+
+    out = {
         "period_days": days,
+        "lens": lens_name,
+        "query_ids": list(query_ids) if query_ids else None,
+        "countries": codes or None,
         "generated_at": now.isoformat(),
         "disclaimer": (
             "Counts reflect observed, deduplicated records in this database from configured "
             "sources/imports. They are not estimates of total market size."
         ),
+        "jobs_per_day": jobs_per_day,
         "kpis": [
             _metric(
                 "unique_jobs_observed",
@@ -219,97 +301,106 @@ def dashboard_summary(
         },
         "growth_status": growth_status,
     }
+    notes = coverage_notes_for_slice(
+        db, country_code=country_code, job_id_subq=job_id_subq, date_from=date_from
+    )
+    return attach_coverage_notes(out, notes)
 
 
-def list_jobs(
+def technology_trends(
     db: Session,
     *,
-    skip: int = 0,
-    limit: int = 50,
+    days: int = 90,
+    min_support: int = 3,
     country_code: Optional[str] = None,
-    contract_type: Optional[str] = None,
-    remote_type: Optional[str] = None,
-    technology: Optional[str] = None,
-    q: Optional[str] = None,
+    lens: Optional[str] = None,
+    query_ids: Optional[Sequence[int]] = None,
+    min_evidence: Optional[str] = DEFAULT_MIN_EVIDENCE,
 ) -> dict[str, Any]:
-    query = _base_job_query(
-        country_code=country_code,
-        contract_type=contract_type,
-        remote_type=remote_type,
-    ).options(joinedload(Job.source), joinedload(Job.skills).joinedload(JobSkill.technology), joinedload(Job.rates))
-    if technology:
-        query = query.join(JobSkill).join(Technology).where(Technology.canonical_name == technology)
-    if q:
-        like = f"%{q}%"
-        query = query.where(
-            or_(
-                Job.title_original.ilike(like),
-                Job.company_original.ilike(like),
-                Job.description_original.ilike(like),
-            )
+    """Technology half-period trends. ``lens=None`` = all jobs."""
+    lens_name = parse_lens(lens)
+    codes = parse_country_codes(country_code)
+    country_clause = country_codes_clause(codes)
+    tier = parse_min_evidence(min_evidence)
+    if lens_name == "compare":
+        counts = compare_counts(
+            db, query_ids=query_ids, days=days, country_code=country_code
         )
-    total = db.scalar(select(func.count()).select_from(query.order_by(None).subquery())) or 0
-    rows = db.scalars(query.order_by(Job.published_at.desc().nullslast()).offset(skip).limit(limit)).unique().all()
-    items = []
-    for job in rows:
-        items.append(
-            {
-                "id": job.id,
-                "title": job.title_original,
-                "company": job.company_original,
-                "source": job.source.name if job.source else None,
-                "country_code": job.country_code,
-                "published_at": job.published_at.isoformat() if job.published_at else None,
-                "contract_type": job.contract_type,
-                "contract_evidence_kind": job.contract_evidence_kind,
-                "contract_type_confidence": job.contract_type_confidence,
-                "remote_type": job.remote_type,
-                "seniority": job.seniority,
-                "residence_restriction": job.residence_restriction,
-                "status": job.status,
-                "canonical_url": job.canonical_url,
-                "technologies": [
-                    {
-                        "name": s.technology.canonical_name,
-                        "importance": s.importance,
-                        "evidence_kind": s.evidence_kind,
-                        "confidence": s.confidence,
-                    }
-                    for s in job.skills
-                ],
-                "rates": [
-                    {
-                        "amount_min": r.amount_min,
-                        "amount_max": r.amount_max,
-                        "currency": r.currency,
-                        "unit": r.unit,
-                        "rate_type": r.rate_type,
-                        "evidence_kind": r.evidence_kind,
-                        "confidence": r.confidence,
-                    }
-                    for r in job.rates
-                ],
-            }
+        market = technology_trends(
+            db,
+            days=days,
+            min_support=min_support,
+            country_code=country_code,
+            lens="market",
+            query_ids=query_ids,
+            min_evidence=min_evidence,
         )
-    return {"total": total, "skip": skip, "limit": limit, "items": items}
+        focus = technology_trends(
+            db,
+            days=days,
+            min_support=min_support,
+            country_code=country_code,
+            lens="focus",
+            query_ids=query_ids,
+            min_evidence=min_evidence,
+        )
+        # Lift shared metadata (period / evidence) like dashboard_summary.compare.
+        return {
+            "lens": "compare",
+            "query_ids": list(query_ids) if query_ids else None,
+            "countries": codes or None,
+            **counts,
+            "period_days": market.get("period_days", days),
+            "min_support": market.get("min_support", min_support),
+            "min_evidence": market.get("min_evidence"),
+            "excluded_thin_n": market.get("excluded_thin_n", 0),
+            "market": market,
+            "focus": focus,
+        }
 
-
-def technology_trends(db: Session, *, days: int = 90, min_support: int = 3) -> dict[str, Any]:
+    job_id_subq = resolve_job_id_subquery(db, lens_name, query_ids)
     now = datetime.now(timezone.utc)
     date_from = now - timedelta(days=days)
     mid = now - timedelta(days=days // 2)
+    corpus_all = base_job_query(
+        date_from=date_from,
+        country_codes=codes,
+        job_id_subq=job_id_subq,
+        min_evidence=None,
+    )
+    excluded_thin_n = count_thin_in_query(db, corpus_all) if tier == "standard" else 0
+    recent_conds = [
+        Job.is_canonical.is_(True),
+        Job.status.notin_(_CLOSED),
+        Job.published_at >= mid,
+        Job.published_at <= now,
+        *_lens_where(job_id_subq),
+    ]
+    earlier_conds = [
+        Job.is_canonical.is_(True),
+        Job.status.notin_(_CLOSED),
+        Job.published_at >= date_from,
+        Job.published_at < mid,
+        *_lens_where(job_id_subq),
+    ]
+    if country_clause is not None:
+        recent_conds.append(country_clause)
+        earlier_conds.append(country_clause)
+    if tier:
+        recent_conds.append(Job.evidence_tier == tier)
+        earlier_conds.append(Job.evidence_tier == tier)
     recent = db.execute(
         select(Technology.canonical_name, Technology.category, func.count(JobSkill.id))
         .join(JobSkill)
         .join(Job)
-        .where(Job.is_canonical.is_(True), Job.published_at >= mid, Job.published_at <= now)
+        .where(*recent_conds)
         .group_by(Technology.canonical_name, Technology.category)
     ).all()
     earlier = db.execute(
         select(Technology.canonical_name, func.count(JobSkill.id))
         .join(JobSkill)
         .join(Job)
-        .where(Job.is_canonical.is_(True), Job.published_at >= date_from, Job.published_at < mid)
+        .where(*earlier_conds)
         .group_by(Technology.canonical_name)
     ).all()
     earlier_map = {name: count for name, count in earlier}
@@ -317,10 +408,7 @@ def technology_trends(db: Session, *, days: int = 90, min_support: int = 3) -> d
     for name, category, recent_count in recent:
         prev = earlier_map.get(name, 0)
         total = recent_count + prev
-        if total < min_support:
-            growth = None
-            status = "insufficient_data"
-        elif prev == 0:
+        if total < min_support or prev == 0:
             growth = None
             status = "insufficient_data"
         else:
@@ -340,58 +428,12 @@ def technology_trends(db: Session, *, days: int = 90, min_support: int = 3) -> d
             }
         )
     items.sort(key=lambda x: x["recent_mentions"], reverse=True)
-    return {"period_days": days, "min_support": min_support, "items": items}
-
-
-def data_quality_report(db: Session) -> dict[str, Any]:
-    total = db.scalar(select(func.count()).select_from(Job).where(Job.is_canonical.is_(True))) or 0
-    if total == 0:
-        return {
-            "total_canonical_jobs": 0,
-            "metrics": {},
-            "sources": [],
-            "disclaimer": "No jobs ingested yet.",
-        }
-
-    def pct(n: int) -> float:
-        return round((n / total) * 100.0, 2)
-
-    with_date = db.scalar(
-        select(func.count()).select_from(Job).where(Job.is_canonical.is_(True), Job.published_at.is_not(None))
-    ) or 0
-    known_country = db.scalar(
-        select(func.count())
-        .select_from(Job)
-        .where(Job.is_canonical.is_(True), Job.country_code != "unknown")
-    ) or 0
-    known_contract = db.scalar(
-        select(func.count())
-        .select_from(Job)
-        .where(Job.is_canonical.is_(True), Job.contract_type != "unknown")
-    ) or 0
-    with_rate = db.scalar(select(func.count(func.distinct(JobRate.job_id)))) or 0
-    duplicates = db.scalar(select(func.count()).select_from(Job).where(Job.is_canonical.is_(False))) or 0
-    sources = db.scalars(select(Source)).all()
     return {
-        "total_canonical_jobs": total,
-        "metrics": {
-            "pct_with_valid_date": pct(with_date),
-            "pct_known_country": pct(known_country),
-            "pct_known_contract": pct(known_contract),
-            "pct_with_rate": pct(with_rate),
-            "duplicate_non_canonical_count": duplicates,
-        },
-        "sources": [
-            {
-                "id": s.id,
-                "name": s.name,
-                "connector_status": s.connector_status,
-                "enabled": s.enabled,
-                "last_success_at": s.last_success_at.isoformat() if s.last_success_at else None,
-                "last_error": s.last_error,
-                "coverage_notes": s.coverage_notes,
-            }
-            for s in sources
-        ],
-        "disclaimer": "Quality metrics describe this database, not the external market.",
+        "period_days": days,
+        "min_support": min_support,
+        "lens": lens_name,
+        "query_ids": list(query_ids) if query_ids else None,
+        "countries": codes or None,
+        "items": items,
+        **evidence_meta(min_evidence=tier, excluded_thin_n=excluded_thin_n),
     }

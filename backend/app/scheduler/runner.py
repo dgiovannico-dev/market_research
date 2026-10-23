@@ -7,79 +7,30 @@ from typing import Any
 import structlog
 from sqlalchemy import select
 
-from app.collectors.registry import get_collector
-from app.ingestion.service import ingest_raw_jobs
-from app.storage.db import SessionLocal
-from app.storage.models import AlertRule, CollectionRun, Source
+from app.bootstrap import get_container
+from app.scheduler.daily_crawlers import run_daily_crawlers
+from app.storage.models import AlertRule
 
 log = structlog.get_logger()
 
 
 async def run_enabled_collectors(query: str | None = None) -> list[dict[str, Any]]:
-    db = SessionLocal()
-    results: list[dict[str, Any]] = []
-    try:
-        sources = db.scalars(
-            select(Source).where(Source.enabled.is_(True), Source.connector_status == "enabled")
-        ).all()
-        for source in sources:
-            collector = get_collector(source.connector_type)
-            if not collector:
-                continue
-            started = datetime.now(timezone.utc)
-            run = CollectionRun(source_id=source.id, started_at=started, status="running")
-            db.add(run)
-            db.commit()
-            db.refresh(run)
-            try:
-                collected = await collector.collect(query=query)
-                stats = ingest_raw_jobs(
-                    db,
-                    source_id=source.id,
-                    raw_jobs=collected.records,
-                    collection_method="scheduled_api",
-                )
-                completed = datetime.now(timezone.utc)
-                run.completed_at = completed
-                run.status = "partial" if collected.errors else "succeeded"
-                run.pages_scanned = collected.pages_scanned
-                run.records_received = len(collected.records)
-                run.records_inserted = stats["inserted"]
-                run.records_updated = stats["updated"]
-                run.duplicates_detected = stats["duplicates"]
-                run.errors_count = stats["errors"] + len(collected.errors)
-                run.error_summary = "; ".join(collected.errors)[:2000] if collected.errors else None
-                run.duration_seconds = (completed - started).total_seconds()
-                source.last_success_at = completed
-                if run.error_summary:
-                    source.last_error = run.error_summary
-                    source.last_error_at = completed
-                db.commit()
-                results.append({"source": source.name, "run_id": run.id, **stats})
-            except Exception as exc:  # noqa: BLE001
-                db.rollback()
-                source.last_error = str(exc)
-                source.last_error_at = datetime.now(timezone.utc)
-                db.commit()
-                log.error("collector_failed", source=source.name, error=str(exc))
-                results.append({"source": source.name, "error": str(exc)})
-    finally:
-        db.close()
-    return results
+    """Backward-compatible entry: runs budgeted daily crawlers (query ignored)."""
+    del query  # product path no longer fans out a single env/default topic
+    result = await run_daily_crawlers(force=True)
+    return list(result.get("collections") or [])
 
 
 def evaluate_alerts() -> list[dict[str, Any]]:
     """Evaluate simple threshold alerts against latest dashboard KPIs."""
     from app.analytics import kpis
 
-    db = SessionLocal()
     fired: list[dict[str, Any]] = []
-    try:
+    with get_container().session_scope() as db:
         summary = kpis.dashboard_summary(db, days=30)
         trends = kpis.technology_trends(db, days=60, min_support=2)
         rules = db.scalars(select(AlertRule).where(AlertRule.enabled.is_(True))).all()
         if not rules:
-            # seed a default growth alert if none
             default = AlertRule(
                 name="Tech growth observed",
                 rule_type="technology_growth",
@@ -107,9 +58,12 @@ def evaluate_alerts() -> list[dict[str, Any]]:
                     db.commit()
                     fired.append({"rule": rule.name, "evidence": evidence, "hits": hits[:5]})
             elif rule.rule_type == "low_quality":
-                # placeholder using unique jobs == 0
                 unique = next(
-                    (k["metric_value"] for k in summary["kpis"] if k["metric_name"] == "unique_jobs_observed"),
+                    (
+                        k["metric_value"]
+                        for k in summary["kpis"]
+                        if k["metric_name"] == "unique_jobs_observed"
+                    ),
                     0,
                 )
                 if unique == 0:
@@ -117,19 +71,31 @@ def evaluate_alerts() -> list[dict[str, Any]]:
                     rule.last_evidence = "No observed jobs in period"
                     db.commit()
                     fired.append({"rule": rule.name, "evidence": rule.last_evidence})
-    finally:
-        db.close()
     return fired
 
 
-async def scheduler_tick() -> dict[str, Any]:
-    collections = await run_enabled_collectors()
-    alerts = evaluate_alerts()
+def _thin_scheduler_response(result: dict[str, Any], *, alerts: list[dict[str, Any]]) -> dict[str, Any]:
+    """Public tick payload: counts + summary only (no full collection lists)."""
     return {
-        "ran_at": datetime.now(timezone.utc).isoformat(),
-        "collections": collections,
+        "status": result.get("status"),
+        "idempotent": result.get("idempotent"),
+        "day": result.get("day"),
+        "ran_at": result.get("ran_at"),
+        "dump_ran": result.get("dump_ran", 0),
+        "discovery_ran": result.get("discovery_ran", 0),
+        "focus_ran": result.get("focus_ran", 0),
+        "calls": result.get("calls", 0),
+        "summary": result.get("summary"),
         "alerts_fired": alerts,
     }
+
+
+async def scheduler_tick(*, force: bool = False) -> dict[str, Any]:
+    result = await run_daily_crawlers(force=force)
+    if result.get("status") == "skipped_idempotent":
+        return _thin_scheduler_response(result, alerts=[])
+    alerts = evaluate_alerts()
+    return _thin_scheduler_response(result, alerts=alerts)
 
 
 def start_background_scheduler(interval_seconds: int = 3600) -> asyncio.Task:
@@ -137,7 +103,12 @@ def start_background_scheduler(interval_seconds: int = 3600) -> asyncio.Task:
         while True:
             try:
                 result = await scheduler_tick()
-                log.info("scheduler_tick", **{"collections": len(result["collections"])})
+                log.info(
+                    "scheduler_tick",
+                    status=result.get("status"),
+                    collections=len(result.get("collections") or []),
+                    calls=result.get("calls"),
+                )
             except Exception as exc:  # noqa: BLE001
                 log.error("scheduler_tick_failed", error=str(exc))
             await asyncio.sleep(interval_seconds)

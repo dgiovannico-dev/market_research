@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -77,14 +77,44 @@ def update_profile(payload: ProfileUpdate, db: Session = Depends(get_db)) -> dic
     return {"status": "updated", "id": profile.id}
 
 
+class DashboardPrefsBody(BaseModel):
+    prefs: dict[str, Any]
+
+
+@router.get("/profile/dashboard-prefs")
+def get_dashboard_prefs(db: Session = Depends(get_db)) -> dict[str, Any]:
+    profile = _profile(db)
+    return {"prefs": profile.dashboard_prefs or {}, "profile_id": profile.id}
+
+
+@router.put("/profile/dashboard-prefs")
+def put_dashboard_prefs(body: DashboardPrefsBody, db: Session = Depends(get_db)) -> dict[str, Any]:
+    profile = _profile(db)
+    profile.dashboard_prefs = body.prefs
+    db.commit()
+    return {"status": "saved", "profile_id": profile.id, "prefs": profile.dashboard_prefs}
+
+
 @router.get("/profile/skill-gaps")
-def profile_skill_gaps(db: Session = Depends(get_db)) -> dict[str, Any]:
-    return skill_gaps(db)
+def profile_skill_gaps(
+    db: Session = Depends(get_db),
+    country_code: Optional[str] = Query(
+        default=None,
+        description="Optional CSV ISO country codes (same as market KPIs).",
+    ),
+) -> dict[str, Any]:
+    return skill_gaps(db, country_code=country_code)
 
 
 @router.get("/profile/recommendations")
-def profile_recommendations(db: Session = Depends(get_db)) -> dict[str, Any]:
-    return recommendations(db)
+def profile_recommendations(
+    db: Session = Depends(get_db),
+    country_code: Optional[str] = Query(
+        default=None,
+        description="Optional CSV ISO country codes (same as market KPIs).",
+    ),
+) -> dict[str, Any]:
+    return recommendations(db, country_code=country_code)
 
 
 @router.get("/applications")

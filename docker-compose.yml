@@ -29,6 +29,13 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    # Survive transient process exits; intentional `compose stop` still stays down.
+    restart: unless-stopped
+    # Pin non-root even if the image was built before Dockerfile USER (stale cache).
+    # Default matches image appuser (uid/gid 1000). On Linux bind-mount write issues,
+    # set API_UID/API_GID to the host owner of ./backend and ./data (e.g. id -u / id -g).
+    # Bind mounts hide image /app ownership; they do not change process UID.
+    user: "${API_UID:-1000}:${API_GID:-1000}"
     env_file:
       - .env
     environment:
@@ -41,6 +48,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      # Readiness (/readyz == /healthz): 503 when Postgres (or required Redis) is down
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8000/readyz >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
     volumes:
       - ./backend:/app
       - ./data:/data
@@ -52,12 +66,17 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    # Survive transient process exits; intentional `compose stop` still stays down.
+    restart: unless-stopped
     environment:
+      # Browser → host-mapped API; SSR inside the container → Docker network
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      INTERNAL_API_URL: ${INTERNAL_API_URL:-http://api:8000}
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     volumes:
       - ./frontend:/app
       - /app/node_modules

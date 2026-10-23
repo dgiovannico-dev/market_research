@@ -1,15 +1,22 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
+from app.analytics.country_filter import parse_country_codes
+from app.analytics.job_query import base_job_query
 from app.storage.models import Job, JobSkill, Technology, UserProfile, UserSkill
 
 
-def skill_gaps(db: Session, *, days: int = 90) -> dict[str, Any]:
+def skill_gaps(
+    db: Session,
+    *,
+    days: int = 90,
+    country_code: Optional[str] = None,
+) -> dict[str, Any]:
     profile = db.scalar(select(UserProfile).order_by(UserProfile.id).limit(1))
     if not profile:
         return {"error": "profile_missing"}
@@ -24,6 +31,9 @@ def skill_gaps(db: Session, *, days: int = 90) -> dict[str, Any]:
 
     now = datetime.now(timezone.utc)
     date_from = now - timedelta(days=days)
+    codes = parse_country_codes(country_code)
+    corpus = base_job_query(date_from=date_from, country_codes=codes)
+    job_ids = select(corpus.with_only_columns(Job.id).subquery().c.id)
     demand = db.execute(
         select(
             Technology.id,
@@ -33,7 +43,7 @@ def skill_gaps(db: Session, *, days: int = 90) -> dict[str, Any]:
         )
         .join(JobSkill, JobSkill.technology_id == Technology.id)
         .join(Job, Job.id == JobSkill.job_id)
-        .where(Job.is_canonical.is_(True), Job.published_at >= date_from)
+        .where(Job.id.in_(job_ids))
         .group_by(Technology.id, Technology.canonical_name, JobSkill.importance)
     ).all()
 
@@ -82,20 +92,18 @@ def skill_gaps(db: Session, *, days: int = 90) -> dict[str, Any]:
         )
     gaps.sort(key=lambda x: -x["priority_score"])
 
-    accessible = db.scalar(
-        select(func.count())
-        .select_from(Job)
-        .where(
-            Job.is_canonical.is_(True),
-            Job.published_at >= date_from,
-            Job.remote_type == "remote",
-            Job.contract_type.in_(["freelance", "b2b", "contractor"]),
-        )
-    ) or 0
+    accessible_q = base_job_query(
+        date_from=date_from,
+        country_codes=codes,
+        remote_type="remote",
+        verified_contract_only=True,
+    )
+    accessible = db.scalar(select(func.count()).select_from(accessible_q.subquery())) or 0
 
     return {
         "profile_id": profile.id,
         "residence_country": profile.residence_country,
+        "countries": codes or None,
         "owned_skills": sorted(user_names),
         "weights": weights,
         "accessible_remote_b2b_jobs_observed": accessible,
@@ -104,7 +112,13 @@ def skill_gaps(db: Session, *, days: int = 90) -> dict[str, Any]:
     }
 
 
-def recommendations(db: Session, *, days: int = 60, limit: int = 25) -> dict[str, Any]:
+def recommendations(
+    db: Session,
+    *,
+    days: int = 60,
+    limit: int = 25,
+    country_code: Optional[str] = None,
+) -> dict[str, Any]:
     profile = db.scalar(select(UserProfile).order_by(UserProfile.id).limit(1))
     if not profile:
         return {"error": "profile_missing", "items": []}
@@ -117,12 +131,13 @@ def recommendations(db: Session, *, days: int = 60, limit: int = 25) -> dict[str
     )
     now = datetime.now(timezone.utc)
     date_from = now - timedelta(days=days)
+    codes = parse_country_codes(country_code)
+    corpus = base_job_query(date_from=date_from, country_codes=codes)
     jobs = db.scalars(
         select(Job)
         .options(joinedload(Job.skills).joinedload(JobSkill.technology), joinedload(Job.rates))
         .where(
-            Job.is_canonical.is_(True),
-            Job.published_at >= date_from,
+            Job.id.in_(corpus.with_only_columns(Job.id)),
             Job.contract_type.in_(["freelance", "b2b", "contractor", "unknown"]),
         )
         .order_by(Job.published_at.desc())
@@ -162,6 +177,7 @@ def recommendations(db: Session, *, days: int = 60, limit: int = 25) -> dict[str
     return {
         "profile_id": profile.id,
         "period_days": days,
+        "countries": codes or None,
         "items": items[:limit],
         "disclaimer": "Match is overlap of configured skills vs extracted job skills.",
     }

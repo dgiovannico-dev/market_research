@@ -40,6 +40,79 @@ jobs:
       - run: pip install -r requirements.txt
       - run: alembic upgrade head
       - run: pytest -q
+      - name: Install psql/pg_dump client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Backup + restore smoke
+        env:
+          POSTGRES_USER: fmi
+          POSTGRES_PASSWORD: fmi_ci
+          POSTGRES_DB: fmi
+          POSTGRES_HOST: localhost
+        run: |
+          ./scripts/backup_smoke.sh
+          ./scripts/restore_smoke.sh
+
+  # Live API smoke: Demand Compass §11 (intents + lenses + briefs).
+  # Uses smoke_compass (not full smoke_e2e) so CI stays offline-deterministic —
+  # smoke_e2e also hits Eurostat/ESCO/JobTech which are flaky without keys.
+  compass-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fmi
+          POSTGRES_PASSWORD: fmi_ci
+          POSTGRES_DB: fmi
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fmi -d fmi"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql+psycopg://fmi:fmi_ci@localhost:5432/fmi
+      ENABLE_SCHEDULER: "false"
+      LLM_PROVIDER: none
+      CLASSIFICATION_MODE: rules
+      RATE_LIMIT_BACKEND: memory
+      API_URL: http://127.0.0.1:8000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: alembic upgrade head
+      - name: Install jq (smoke_compass assertions)
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Start API + Demand Compass smoke
+        run: |
+          nohup uvicorn app.main:app --host 127.0.0.1 --port 8000 \
+            >/tmp/fmi-api.log 2>&1 &
+          echo $! > /tmp/fmi-api.pid
+          trap 'kill "$(cat /tmp/fmi-api.pid)" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 45); do
+            if curl -sf "$API_URL/readyz" >/dev/null; then
+              echo "API ready after ${i}s"
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != "1" ]; then
+            echo "API failed to become ready; log:" >&2
+            cat /tmp/fmi-api.log >&2 || true
+            exit 1
+          fi
+          ./scripts/smoke_compass.sh
 
   frontend:
     runs-on: ubuntu-latest
@@ -54,6 +127,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - run: npm run test:unit
       - run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000

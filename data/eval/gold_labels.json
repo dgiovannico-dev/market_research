@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "description": "Small gold set for rules classifier regression. Not market statistics. Labels use taxonomy values from classification.rules (employment not permanent).",
+  "items": [
+    {
+      "id": "g1",
+      "title": "Senior Java Spring Boot Contractor",
+      "description": "B2B contract role. Remote-first. Day rate EUR 550-650. Ltd company preferred.",
+      "location": "Remote Europe",
+      "expected": {
+        "contract_type": "b2b",
+        "remote_type": "remote"
+      }
+    },
+    {
+      "id": "g2",
+      "title": "Full-time Backend Engineer",
+      "description": "Permanent employment. Hybrid in Berlin office 3 days/week. Salary package.",
+      "location": "Berlin, Germany",
+      "expected": {
+        "contract_type": "employment",
+        "remote_type": "hybrid"
+      }
+    },
+    {
+      "id": "g3",
+      "title": "RAG / LLM Engineer Freelance",
+      "description": "Independent for GenAI RAG pipeline. Fully remote worldwide. Hourly rate.",
+      "location": "Anywhere",
+      "expected": {
+        "contract_type": "freelance",
+        "remote_type": "remote"
+      }
+    },
+    {
+      "id": "g4",
+      "title": "On-site Platform Engineer",
+      "description": "Must work on-site in Zurich. Employment contract with Swiss entity.",
+      "location": "Zurich, Switzerland",
+      "expected": {
+        "contract_type": "employment",
+        "remote_type": "onsite"
+      }
+    },
+    {
+      "id": "g5",
+      "title": "DevOps Engineer",
+      "description": "Looking for a strong engineer. Office presence optional.",
+      "location": "Amsterdam",
+      "expected": {
+        "contract_type": "unknown",
+        "remote_type": "unknown"
+      }
+    }
+  ]
+}

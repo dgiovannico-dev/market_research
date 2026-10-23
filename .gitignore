@@ -1,4 +1,6 @@
 .env
+.cursor/mcp.json
+.cursor/compose-stack-last-ok
 .venv/
 venv/
 __pycache__/

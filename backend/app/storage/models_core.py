@@ -1,20 +1,23 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Optional
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    Date,
     DateTime,
     Float,
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,12 +28,16 @@ class Source(Base):
     __tablename__ = "sources"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(256), unique=True, nullable=False)
     source_type: Mapped[str] = mapped_column(String(64), nullable=False)
     base_url: Mapped[Optional[str]] = mapped_column(String(512))
     connector_type: Mapped[str] = mapped_column(String(64), nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     connector_status: Mapped[str] = mapped_column(String(64), default="unsupported")
+    verification_status: Mapped[str] = mapped_column(String(64), default="DISCOVERED")
+    catalog_id: Mapped[Optional[int]] = mapped_column(Integer, index=True)
+    category: Mapped[Optional[str]] = mapped_column(String(8))
+    access_mode: Mapped[Optional[str]] = mapped_column(String(64))
     configuration: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     terms_url: Mapped[Optional[str]] = mapped_column(String(512))
     coverage_notes: Mapped[Optional[str]] = mapped_column(Text)
@@ -38,6 +45,7 @@ class Source(Base):
     last_success_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     last_error_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     last_error: Mapped[Optional[str]] = mapped_column(Text)
+    last_validated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     docs_url: Mapped[Optional[str]] = mapped_column(String(512))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -46,6 +54,35 @@ class Source(Base):
 
     jobs: Mapped[list[Job]] = relationship(back_populates="source")
     collection_runs: Mapped[list[CollectionRun]] = relationship(back_populates="source")
+    verifications: Mapped[list[SourceVerification]] = relationship(back_populates="source")
+
+
+class SourceVerification(Base):
+    __tablename__ = "source_verifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sources.id"))
+    catalog_id: Mapped[Optional[int]] = mapped_column(Integer, index=True)
+    status: Mapped[str] = mapped_column(String(64), nullable=False)
+    http_status: Mapped[Optional[int]] = mapped_column(Integer)
+    evidence: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    source: Mapped[Optional[Source]] = relationship(back_populates="verifications")
+
+
+class SourceCredential(Base):
+    """Fernet-encrypted secret bundle per credentialed connector_key (not Source FK)."""
+
+    __tablename__ = "source_credentials"
+
+    connector_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    ciphertext: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    updated_by: Mapped[Optional[str]] = mapped_column(String(128))
 
 
 class SearchQuery(Base):
@@ -57,12 +94,34 @@ class SearchQuery(Base):
     countries: Mapped[list[str]] = mapped_column(JSON, default=list)
     role_families: Mapped[list[str]] = mapped_column(JSON, default=list)
     contract_types: Mapped[list[str]] = mapped_column(JSON, default=list)
+    filters_extra: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    kind: Mapped[str] = mapped_column(String(32), default="focus", nullable=False)  # discovery | focus
+    origin: Mapped[str] = mapped_column(String(32), default="user", nullable=False)
+    schedule_hint: Mapped[str] = mapped_column(String(32), default="daily", nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class JobIntentMatch(Base):
+    """Normative provenance: job matched to a research intent (discovery or focus)."""
+
+    __tablename__ = "job_intent_matches"
+    __table_args__ = (
+        UniqueConstraint("job_id", "query_id", name="uq_job_intent_match"),
+        Index("ix_job_intent_matches_query_id", "query_id"),
+        Index("ix_job_intent_matches_job_id", "job_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
+    query_id: Mapped[int] = mapped_column(ForeignKey("search_queries.id", ondelete="CASCADE"), nullable=False)
+    first_matched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_matched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class CollectionRun(Base):
@@ -82,8 +141,20 @@ class CollectionRun(Base):
     errors_count: Mapped[int] = mapped_column(Integer, default=0)
     error_summary: Mapped[Optional[str]] = mapped_column(Text)
     duration_seconds: Mapped[Optional[float]] = mapped_column(Float)
+    summary: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
 
     source: Mapped[Source] = relationship(back_populates="collection_runs")
+
+
+class CrawlerTick(Base):
+    """UTC-day idempotency record for budgeted daily crawlers."""
+
+    __tablename__ = "crawler_ticks"
+
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    summary: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Job(Base):
@@ -94,6 +165,14 @@ class Job(Base):
         Index("ix_jobs_published_at", "published_at"),
         Index("ix_jobs_canonical_url", "canonical_url"),
         Index("ix_jobs_description_hash", "description_hash"),
+        # One canonical row per URL (app dedup + race safety). Non-canonical
+        # duplicates may still share the URL if duplicate_of_job_id is used later.
+        Index(
+            "uq_jobs_canonical_url_when_canonical",
+            "canonical_url",
+            unique=True,
+            postgresql_where=text("is_canonical IS TRUE"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -134,6 +213,8 @@ class Job(Base):
     status: Mapped[str] = mapped_column(String(32), default="active_unverified")
     source_status: Mapped[Optional[str]] = mapped_column(String(64))
     collection_method: Mapped[str] = mapped_column(String(64), default="api")
+    evidence_tier: Mapped[str] = mapped_column(String(16), default="standard")
+    source_snapshot_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     classification_version: Mapped[Optional[str]] = mapped_column(String(32))
     duplicate_of_job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("jobs.id"))
     is_canonical: Mapped[bool] = mapped_column(Boolean, default=True)

@@ -16,7 +16,10 @@ SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 
 def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
+    """FastAPI session dependency — opens via the composition root when available."""
+    from app.bootstrap import get_container
+
+    db = get_container().open_session()
     try:
         yield db
     finally:

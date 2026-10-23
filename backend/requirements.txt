@@ -18,7 +18,11 @@ structlog==25.2.0
 tenacity==9.1.2
 python-dateutil==2.9.0.post0
 orjson==3.10.16
+cryptography==44.0.2
 pytest==8.3.5
 pytest-asyncio==0.26.0
 httpx==0.28.1
 ruff==0.11.5
+mcp==1.9.4
+# Keep FastAPI-compatible Starlette (mcp may pull a newer starlette transitively)
+starlette>=0.40.0,<0.47.0

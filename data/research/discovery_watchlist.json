@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "description": "Transparent market-scan probes for FMI Demand Compass. Seeded as SearchQuery kind=discovery. Not env defaults; users may disable/edit.",
+  "intents": [
+    {
+      "label": "Software engineering (broad)",
+      "query_text": "software engineer OR backend developer OR full stack",
+      "filters": { "remote_preferred": true }
+    },
+    {
+      "label": "Java / JVM",
+      "query_text": "java OR spring boot OR kotlin"
+    },
+    {
+      "label": "Python / data backends",
+      "query_text": "python developer OR fastapi OR django"
+    },
+    {
+      "label": "TypeScript / Node",
+      "query_text": "typescript OR node.js OR react"
+    },
+    {
+      "label": "Cloud / DevOps",
+      "query_text": "devops OR kubernetes OR kubernetes OR kubernetes OR platform engineer"
+    },
+    {
+      "label": "AI / LLM / RAG",
+      "query_text": "LLM OR RAG OR generative AI OR AI engineer OR langchain OR langgraph"
+    },
+    {
+      "label": "Data / ML engineering",
+      "query_text": "data engineer OR machine learning engineer OR MLOps"
+    },
+    {
+      "label": "Freelance / contractor IT",
+      "query_text": "freelance OR contractor OR contract OR independent consultant",
+      "filters": { "contract_signal": true }
+    },
+    {
+      "label": "Architecture / tech lead",
+      "query_text": "software architect OR technical lead OR principal engineer"
+    },
+    {
+      "label": "Security engineering",
+      "query_text": "security engineer OR AppSec OR DevSecOps"
+    }
+  ]
+}
