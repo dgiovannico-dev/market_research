@@ -1,80 +1,102 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+/**
+ * @deprecated Prefer `@/entities/*` and `@/shared/api`.
+ * Thin barrel kept for existing imports during FSD Wave 1.
+ */
+import { assistantApi } from "@/entities/assistant";
+import { jobApi } from "@/entities/job";
+import { marketApi } from "@/entities/market";
+import { relationsApi } from "@/entities/relation";
+import { researchApi } from "@/entities/research-intent";
+import { sourceApi } from "@/entities/source";
+import { runSource } from "@/features/run-source";
 
-async function getJSON<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error(`API ${path} failed: ${res.status}`);
-  }
-  return res.json() as Promise<T>;
-}
-
-export type Kpi = {
-  metric_name: string;
-  metric_value: number;
-  sample_size: number;
-  unit: string;
-  definition: string;
-  limits: string;
-  evidence_kind: string;
-  source_coverage: string;
-};
-
-export type DashboardSummary = {
-  period_days: number;
-  generated_at: string;
-  disclaimer: string;
-  growth_status: string;
-  kpis: Kpi[];
-  top_technologies: { technology: string; job_skill_mentions: number }[];
-  top_countries: { country_code: string; jobs: number }[];
-  data_quality: {
-    sources_total: number;
-    sources_enabled: number;
-    sources_with_errors: number;
-    last_source_success_at: string | null;
-  };
-};
-
-export type JobItem = {
-  id: number;
-  title: string;
-  company: string | null;
-  source: string | null;
-  country_code: string;
-  published_at: string | null;
-  contract_type: string;
-  contract_evidence_kind: string;
-  remote_type: string;
-  seniority: string | null;
-  status: string;
-  canonical_url: string;
-  technologies: { name: string; importance: string; evidence_kind: string }[];
-  rates: {
-    amount_min: number | null;
-    amount_max: number | null;
-    currency: string | null;
-    unit: string;
-    evidence_kind: string;
-  }[];
-};
+export { ApiRequestError } from "@/shared/api";
+export type { DashboardLens, DashboardLensParams } from "@/shared/api";
+export type { CoverageNote } from "@/entities/coverage-note";
+export type {
+  CooccurrencePayload,
+  CountryComparison,
+  CountryComparisonItem,
+  DashboardSummary,
+  JobsPerDayPoint,
+  Kpi,
+  MarketFacetBucket,
+  MarketFacets,
+  MarketLanguageItem,
+  MarketLanguages,
+  TechnologyTrendItem,
+  TechnologyTrends,
+} from "@/entities/market";
+export type { JobItem } from "@/entities/job";
+export type {
+  LanguageCountryMatrix,
+  LanguageCountryMatrixCell,
+  MarketSeriesLine,
+  MarketSeriesOpts,
+  MarketSeriesPayload,
+  MarketSeriesPoint,
+  MatrixLanguageCountryOpts,
+  MatrixRoleTechOpts,
+  MatrixSeniorityTechOpts,
+  MatrixTechCountryOpts,
+  RoleTechMatrix,
+  RoleTechMatrixCell,
+  SeniorityTechMatrix,
+  SeniorityTechMatrixCell,
+  TechCountryMatrix,
+  TechCountryMatrixCell,
+} from "@/entities/relation";
+export type {
+  QualityBySourceRow,
+  QualityPayload,
+} from "@/entities/quality";
+export type { RateExplorer, RateExplorerItem } from "@/entities/rate";
+export type {
+  ResearchIntent,
+  ResearchIntentCreate,
+  ResearchIntentKind,
+  ResearchIntentPatch,
+} from "@/entities/research-intent";
+export type {
+  AssistantBriefType,
+  AssistantLocale,
+  AssistantLocaleMeta,
+  EvidenceBrief,
+  ProposedWatchCandidate,
+} from "@/entities/assistant";
 
 export const api = {
-  summary: (days = 30) => getJSON<DashboardSummary>(`/api/v1/dashboard/summary?days=${days}`),
-  jobs: (params = "") => getJSON<{ total: number; items: JobItem[] }>(`/api/v1/market/jobs?${params}`),
-  quality: () => getJSON<Record<string, unknown>>("/api/v1/market/quality"),
-  trends: (days = 90) => getJSON<{ items: Record<string, unknown>[] }>(`/api/v1/market/trends?days=${days}`),
-  sources: () => getJSON<{ items: Record<string, unknown>[] }>("/api/v1/sources"),
-  llmStatus: () => getJSON<Record<string, unknown>>("/api/v1/llm/status"),
-  cooccurrence: (days = 90, minSupport = 2) =>
-    getJSON<{
-      jobs_analyzed: number;
-      period_days: number;
-      items: Record<string, unknown>[];
-    }>(`/api/v1/market/skills/cooccurrence?days=${days}&min_support=${minSupport}`),
-  runSource: async (sourceId: number, query?: string) => {
-    const q = query ? `?query=${encodeURIComponent(query)}` : "";
-    const res = await fetch(`${API_URL}/api/v1/sources/${sourceId}/run${q}`, { method: "POST" });
-    if (!res.ok) throw new Error(`Run failed: ${res.status}`);
-    return res.json();
-  },
+  summary: marketApi.summary,
+  jobs: jobApi.list,
+  quality: marketApi.quality,
+  trends: marketApi.trends,
+  countries: marketApi.countries,
+  facets: marketApi.facets,
+  languages: marketApi.languages,
+  rates: marketApi.rates,
+  sources: sourceApi.list,
+  catalogSummary: sourceApi.catalogSummary,
+  catalog: sourceApi.catalog,
+  opsMetrics: sourceApi.opsMetrics,
+  llmStatus: sourceApi.llmStatus,
+  cooccurrence: marketApi.cooccurrence,
+  matrixTechCountry: relationsApi.matrixTechCountry,
+  matrixLanguageCountry: relationsApi.matrixLanguageCountry,
+  matrixRoleTech: relationsApi.matrixRoleTech,
+  matrixSeniorityTech: relationsApi.matrixSeniorityTech,
+  seriesTechnologies: relationsApi.seriesTechnologies,
+  seriesCountries: relationsApi.seriesCountries,
+  seriesRates: relationsApi.seriesRates,
+  escoSearch: marketApi.escoSearch,
+  runSource,
+  assistantPropose: assistantApi.propose,
+  assistantBrief: assistantApi.brief,
+  researchJobs: researchApi.jobs,
+  researchJobFacets: researchApi.jobFacets,
+  listResearchIntents: researchApi.list,
+  createResearchIntent: researchApi.create,
+  patchResearchIntent: researchApi.patch,
+  deleteResearchIntent: researchApi.remove,
+  syncResearchIntent: researchApi.sync,
+  acceptResearchWatch: researchApi.acceptWatch,
 };

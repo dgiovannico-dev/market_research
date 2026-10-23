@@ -1,8 +1,16 @@
 FROM node:22-alpine
 
 WORKDIR /app
+
 COPY package.json package-lock.json* ./
 RUN npm install
 COPY . .
+
+# Pre-create .next so anonymous volume init inherits non-root ownership (Compose).
+RUN mkdir -p .next && chown -R node:node /app
+
+USER node
+
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
+# Exec-form next (not `npm run`) so closed stdin/TTY does not tear down the process.
+CMD ["npx", "next", "dev", "-H", "0.0.0.0", "-p", "3000"]

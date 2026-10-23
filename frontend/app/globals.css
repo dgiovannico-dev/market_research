@@ -2,37 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Atlas — cool slate + teal (not purple neon, not cream+terracotta, not broadsheet). */
 :root {
-  --bg: #f4f7f6;
-  --fg: #0f172a;
+  --ink: #0f172a;
+  --paper: #f1f5f9;
+  --signal: #0d9488;
+  --rise: #059669;
+  --cool: #0284c7;
+  --line: #cbd5e1;
   --card: #ffffff;
-  --line: #d7e0dc;
-  --accent: #0f766e;
+  --muted: #64748b;
+  --warn: #b45309;
+
+  --sans: var(--font-sans), "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --display: var(--font-display), Syne, ui-sans-serif, system-ui, sans-serif;
+  --mono: var(--font-mono), "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Back-compat aliases used by existing classnames */
+  --bg: var(--paper);
+  --fg: var(--ink);
+  --accent: var(--signal);
 }
 
 .dark {
-  --bg: #0b1220;
-  --fg: #e5eef5;
+  --ink: #e2e8f0;
+  --paper: #0b1220;
+  --signal: #2dd4bf;
+  --rise: #34d399;
+  --cool: #38bdf8;
+  --line: #1e293b;
   --card: #111827;
-  --line: #1f2a37;
-  --accent: #2dd4bf;
+  --muted: #94a3b8;
+  --warn: #fbbf24;
+
+  --sans: var(--font-sans), "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --display: var(--font-display), Syne, ui-sans-serif, system-ui, sans-serif;
+  --mono: var(--font-mono), "IBM Plex Mono", ui-monospace, monospace;
+
+  --bg: var(--paper);
+  --fg: var(--ink);
+  --accent: var(--signal);
 }
 
 html,
 body {
-  background: radial-gradient(1200px 600px at 10% -10%, #c7efe8 0%, transparent 50%),
-    radial-gradient(900px 500px at 100% 0%, #dbeafe 0%, transparent 45%), var(--bg);
-  color: var(--fg);
+  background:
+    radial-gradient(1100px 520px at 8% -12%, color-mix(in srgb, var(--signal) 18%, transparent) 0%, transparent 52%),
+    radial-gradient(900px 480px at 100% 0%, color-mix(in srgb, var(--cool) 12%, transparent) 0%, transparent 48%),
+    var(--paper);
+  color: var(--ink);
   min-height: 100%;
 }
 
 body {
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  font-family: var(--sans);
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.font-display {
+  font-family: var(--display);
 }
 
 .card {
@@ -45,4 +77,196 @@ a {
 .badge {
   @apply inline-flex items-center rounded px-2 py-0.5 text-xs font-medium;
   border: 1px solid var(--line);
+}
+
+.signal-text {
+  color: var(--signal);
+}
+
+.rise-text {
+  color: var(--rise);
+}
+
+.cool-text {
+  color: var(--cool);
+}
+
+/* Primary nav — horizontal zone dropdowns */
+@keyframes primary-nav-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.4rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.primary-nav {
+  min-width: 0;
+}
+
+.primary-nav > ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.primary-nav__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  padding: 0.4rem 0.8rem;
+  font-family: var(--display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--ink);
+  opacity: 0.78;
+  transition:
+    opacity 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.primary-nav__trigger:hover,
+.primary-nav__trigger:focus-visible {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--signal) 35%, var(--line));
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  outline: none;
+}
+
+.primary-nav__trigger--active {
+  opacity: 1;
+  color: var(--signal);
+  border-color: color-mix(in srgb, var(--signal) 45%, var(--line));
+  background: color-mix(in srgb, var(--signal) 10%, var(--card));
+}
+
+.primary-nav__trigger--open {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--signal) 55%, var(--line));
+  background: color-mix(in srgb, var(--signal) 12%, var(--card));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--signal) 18%, transparent);
+}
+
+.primary-nav__chevron {
+  display: inline-block;
+  font-size: 0.65rem;
+  line-height: 1;
+  opacity: 0.65;
+  transition: transform 180ms ease;
+}
+
+.primary-nav__chevron--open {
+  transform: rotate(180deg);
+}
+
+.primary-nav__menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  width: min(28rem, calc(100vw - 1.5rem));
+  min-width: 16rem;
+  max-width: min(28rem, calc(100vw - 1.5rem));
+  padding: 0.4rem;
+  margin: 0;
+  list-style: none;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow:
+    0 18px 40px -24px color-mix(in srgb, var(--ink) 45%, transparent),
+    0 1px 0 color-mix(in srgb, var(--card) 80%, transparent);
+  backdrop-filter: blur(12px);
+  animation: primary-nav-in 170ms ease-out;
+}
+
+.primary-nav__menu--end {
+  left: auto;
+  right: 0;
+}
+
+.primary-nav__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.45rem;
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.875rem;
+  color: var(--ink);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.primary-nav__item-label {
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.primary-nav__item-sep {
+  color: var(--muted);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.primary-nav__item-desc {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.35;
+  flex: 1 1 12rem;
+  min-width: 0;
+  white-space: normal;
+}
+
+.primary-nav__item:hover,
+.primary-nav__item:focus-visible {
+  background: color-mix(in srgb, var(--signal) 12%, transparent);
+  color: var(--signal);
+  outline: none;
+}
+
+.primary-nav__item:hover .primary-nav__item-desc,
+.primary-nav__item:focus-visible .primary-nav__item-desc,
+.primary-nav__item:hover .primary-nav__item-sep,
+.primary-nav__item:focus-visible .primary-nav__item-sep {
+  color: color-mix(in srgb, var(--signal) 72%, var(--muted));
+}
+
+.primary-nav__item--active {
+  background: color-mix(in srgb, var(--signal) 14%, transparent);
+  color: var(--signal);
+}
+
+.primary-nav__item--active .primary-nav__item-label {
+  font-weight: 600;
+}
+
+.primary-nav__item--active .primary-nav__item-desc,
+.primary-nav__item--active .primary-nav__item-sep {
+  color: color-mix(in srgb, var(--signal) 68%, var(--muted));
+  font-weight: 400;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary-nav__menu {
+    animation: none;
+  }
+  .primary-nav__chevron {
+    transition: none;
+  }
 }
