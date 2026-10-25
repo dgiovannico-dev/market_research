@@ -17,7 +17,7 @@ The product must track ~193 candidate sources across aggregators, marketplaces, 
 1. **Canonical registry:** [`data/sources/catalog.json`](../../data/sources/catalog.json), generated/maintained via `backend/scripts/generate_source_catalog.py`, synced to Postgres on seed.
 2. **Categories A–I** label source type; duplicates use `duplicate_of` instead of deleting important names.
 3. **Verification status** on each entry drives UI honesty; runnable connectors are a strict subset.
-4. **Evidence docs** live under `docs/sources/` (validation report, coverage gaps)—not invented pass results.
+4. **Evidence for ACTIVE** lives in catalog verification fields, DB `source_verifications`, and collection-run inserts—not invented pass results. Catalog file: `data/sources/catalog.json`.
 5. **Later modules** (stats-ingest, procurement) stay separate entities; catalog rows may exist before ingest paths exist.
 
 ## Alternatives considered
@@ -37,5 +37,4 @@ The product must track ~193 candidate sources across aggregators, marketplaces, 
 ## Consequences
 
 - Product/specs/roadmap must link the catalog and never equate catalog size with coverage.
-- New connectors update catalog status only after live tests ([SPEC-sources.md](../specs/SPEC-sources.md)).
-- Expansion plan: [../superpowers/plans/2026-10-20-global-sources.md](../superpowers/plans/2026-10-20-global-sources.md).
+- New connectors update catalog status only after live tests; see [ops/RUNBOOKS.md](../ops/RUNBOOKS.md) § connectors.

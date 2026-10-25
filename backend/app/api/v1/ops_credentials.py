@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.api.deps import verify_api_key, verify_ops_token
+from app.api.deps import require_admin, verify_api_key
 from app.collectors.registry import CREDENTIALED_SCAFFOLDS
 from app.secrets.crypto import CredentialsCryptoError
 from app.secrets.resolve import credentials_source, has_required_credentials
@@ -35,13 +35,13 @@ def _require_scaffold(key: str) -> None:
 
 @router.get(
     "/ops/connectors/{connector_key}/credential-fields",
-    dependencies=[Depends(verify_ops_token)],
+    dependencies=[Depends(require_admin)],
 )
 def credential_fields(
     connector_key: str,
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Field names + set/unset (masked). Requires OPS_API_TOKEN."""
+    """Field names + set/unset (masked). Requires admin JWT or OPS break-glass."""
     _require_scaffold(connector_key)
     presence = field_presence(db, connector_key)
     row = db.get(SourceCredential, connector_key)
@@ -61,7 +61,7 @@ def credential_fields(
 
 @router.put(
     "/ops/connectors/{connector_key}/credentials",
-    dependencies=[Depends(verify_ops_token)],
+    dependencies=[Depends(require_admin)],
 )
 def put_credentials(
     connector_key: str,
@@ -102,7 +102,7 @@ def put_credentials(
 
 @router.delete(
     "/ops/connectors/{connector_key}/credentials",
-    dependencies=[Depends(verify_ops_token)],
+    dependencies=[Depends(require_admin)],
 )
 def delete_credentials(
     connector_key: str,

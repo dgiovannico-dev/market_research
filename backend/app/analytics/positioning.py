@@ -16,18 +16,33 @@ def skill_gaps(
     *,
     days: int = 90,
     country_code: Optional[str] = None,
+    owned_skills: Optional[list[str]] = None,
 ) -> dict[str, Any]:
-    profile = db.scalar(select(UserProfile).order_by(UserProfile.id).limit(1))
-    if not profile:
-        return {"error": "profile_missing"}
+    """Gap analysis vs observed demand.
 
-    user_tech_ids = set(
-        db.scalars(select(UserSkill.technology_id).where(UserSkill.profile_id == profile.id)).all()
-    )
-    user_names = {
-        t.canonical_name
-        for t in db.scalars(select(Technology).where(Technology.id.in_(user_tech_ids or [-1]))).all()
-    }
+    When ``owned_skills`` is provided (localStorage / client profile), skip DB
+    UserProfile. Otherwise fall back to first profile row (legacy).
+    """
+    profile: UserProfile | None = None
+    weights: dict[str, Any] = {}
+    if owned_skills is not None:
+        user_names = {n.strip() for n in owned_skills if n and str(n).strip()}
+        profile_id = None
+        residence = None
+    else:
+        profile = db.scalar(select(UserProfile).order_by(UserProfile.id).limit(1))
+        if not profile:
+            return {"error": "profile_missing"}
+        user_tech_ids = set(
+            db.scalars(select(UserSkill.technology_id).where(UserSkill.profile_id == profile.id)).all()
+        )
+        user_names = {
+            t.canonical_name
+            for t in db.scalars(select(Technology).where(Technology.id.in_(user_tech_ids or [-1]))).all()
+        }
+        weights = profile.skill_priority_weights or {}
+        profile_id = profile.id
+        residence = profile.residence_country
 
     now = datetime.now(timezone.utc)
     date_from = now - timedelta(days=days)
@@ -64,7 +79,6 @@ def skill_gaps(
         if key in row:
             row[key] += count
 
-    weights = profile.skill_priority_weights or {}
     gaps = []
     for name, row in agg.items():
         if row["owned"]:
@@ -101,14 +115,15 @@ def skill_gaps(
     accessible = db.scalar(select(func.count()).select_from(accessible_q.subquery())) or 0
 
     return {
-        "profile_id": profile.id,
-        "residence_country": profile.residence_country,
+        "profile_id": profile_id,
+        "residence_country": residence,
         "countries": codes or None,
         "owned_skills": sorted(user_names),
         "weights": weights,
         "accessible_remote_b2b_jobs_observed": accessible,
         "gaps": gaps[:50],
         "disclaimer": "Recommendations are observational gap analysis, not promises of revenue.",
+        "source": "client_skills" if owned_skills is not None else "db_profile",
     }
 
 
@@ -118,17 +133,24 @@ def recommendations(
     days: int = 60,
     limit: int = 25,
     country_code: Optional[str] = None,
+    owned_skills: Optional[list[str]] = None,
 ) -> dict[str, Any]:
-    profile = db.scalar(select(UserProfile).order_by(UserProfile.id).limit(1))
-    if not profile:
-        return {"error": "profile_missing", "items": []}
-    user_tech = set(
-        db.scalars(
-            select(Technology.canonical_name)
-            .join(UserSkill, UserSkill.technology_id == Technology.id)
-            .where(UserSkill.profile_id == profile.id)
-        ).all()
-    )
+    profile: UserProfile | None = None
+    if owned_skills is not None:
+        user_tech = {n.strip() for n in owned_skills if n and str(n).strip()}
+        profile_id = None
+    else:
+        profile = db.scalar(select(UserProfile).order_by(UserProfile.id).limit(1))
+        if not profile:
+            return {"error": "profile_missing", "items": []}
+        user_tech = set(
+            db.scalars(
+                select(Technology.canonical_name)
+                .join(UserSkill, UserSkill.technology_id == Technology.id)
+                .where(UserSkill.profile_id == profile.id)
+            ).all()
+        )
+        profile_id = profile.id
     now = datetime.now(timezone.utc)
     date_from = now - timedelta(days=days)
     codes = parse_country_codes(country_code)
@@ -175,9 +197,10 @@ def recommendations(
         )
     items.sort(key=lambda x: (-x["skill_match"], -len(x["overlap_skills"])))
     return {
-        "profile_id": profile.id,
+        "profile_id": profile_id,
         "period_days": days,
         "countries": codes or None,
         "items": items[:limit],
         "disclaimer": "Match is overlap of configured skills vs extracted job skills.",
+        "source": "client_skills" if owned_skills is not None else "db_profile",
     }

@@ -34,6 +34,15 @@ class Settings(BaseSettings):
     ops_api_token: str = ""
     # Fernet key for source_credentials ciphertext (python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
     credentials_master_key: str = ""
+    # Keycloak / OIDC (ADR-009). When oidc_enabled, browser routes expect Bearer JWT.
+    oidc_enabled: bool = False
+    oidc_issuer: str = ""
+    oidc_audience: str = ""
+    oidc_client_id: str = "fmi-frontend"
+    # Optional override; default = {issuer}/protocol/openid-connect/certs
+    oidc_jwks_url: str = ""
+    # When true and OIDC on, reject requests without valid user JWT (API_KEY still bypasses for machines)
+    oidc_require_user: bool = False
     classification_mode: str = "hybrid"  # rules | llm | hybrid
     llm_provider: str = "none"  # none | ollama | vllm
     ollama_base_url: str = "http://localhost:11434"
@@ -135,7 +144,7 @@ class Settings(BaseSettings):
         "juliusbaer:wd3:External"
     )
     # BambooHR public careers → GET https://{slug}.bamboohr.com/careers/list (no follow redirect)
-    # Default flyio (probed 200+jobs); DC egress may still 503 — see docs/sources/ATS_TENANTS.md
+    # Default flyio (probed 200+jobs); DC egress may still 503 — see data/sources/catalog.json
     bamboohr_companies: str = "flyio"
     # Robert Half public XML feeds: ISO country suffixes for general_rh-{cc}.xml
     robert_half_countries: str = "ch,uk"

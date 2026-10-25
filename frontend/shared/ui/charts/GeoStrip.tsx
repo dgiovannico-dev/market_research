@@ -23,6 +23,8 @@ export type GeoStripProps = {
   className?: string;
   /** Initial / override max bars; user can change via ChartFrame top-N control. */
   maxBars?: number;
+  /** Click a country bar → filter (e.g. CountryFilter). */
+  onCountryClick?: (iso2: string) => void;
 };
 
 export function GeoStrip({
@@ -31,6 +33,7 @@ export function GeoStrip({
   title,
   className,
   maxBars,
+  onCountryClick,
 }: GeoStripProps) {
   const t = useTranslations("charts");
   const resolvedTitle = title ?? t("geoTitle");
@@ -97,6 +100,25 @@ export function GeoStrip({
 
   const height = Math.max(160, rows.length * 28 + 24);
 
+  const onEvents = useMemo(() => {
+    if (!onCountryClick) return undefined;
+    return {
+      click: (params: {
+        name?: string;
+        componentType?: string;
+        dataIndex?: number;
+      }) => {
+        if (params.componentType !== "series") return;
+        let code = params.name ? String(params.name) : "";
+        if (!code && typeof params.dataIndex === "number") {
+          const labels = rows.map((r) => r.country_code).reverse();
+          code = labels[params.dataIndex] ?? "";
+        }
+        if (code) onCountryClick(code);
+      },
+    };
+  }, [onCountryClick, rows]);
+
   return (
     <ChartFrame
       title={resolvedTitle}
@@ -121,7 +143,16 @@ export function GeoStrip({
       className={className}
     >
       {!empty ? (
-        <ReactECharts option={option} style={{ height, width: "100%" }} opts={{ renderer: "svg" }} />
+        <ReactECharts
+          option={option}
+          style={{
+            height,
+            width: "100%",
+            cursor: onCountryClick ? "pointer" : undefined,
+          }}
+          opts={{ renderer: "svg" }}
+          onEvents={onEvents}
+        />
       ) : null}
     </ChartFrame>
   );

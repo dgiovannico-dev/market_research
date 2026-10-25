@@ -29,10 +29,13 @@ import {
 } from "./cooccurrenceHeat";
 import { RelationsHeatmapsPanel } from "./RelationsHeatmapsPanel";
 import { RelationsSeriesPanel } from "./RelationsSeriesPanel";
+import { RelationsGraphPanel } from "./RelationsGraphPanel";
 import {
   RelationsViewTabs,
   type RelationsView,
 } from "./RelationsViewTabs";
+import type { TechGraphPair } from "@/shared/lib/buildTechGraph";
+import { useLocalProfile } from "@/features/user-profile";
 
 type CooccurrencePayload = {
   jobs_analyzed: number;
@@ -44,23 +47,45 @@ type CooccurrencePayload = {
 const COOC_TOP_N = 12;
 const DEFAULT_VIEW: RelationsView = "heat";
 
-function parseRelationsView(raw: string | null): RelationsView {
-  return raw === "series" ? "series" : DEFAULT_VIEW;
+function parseRelationsView(
+  raw: string | null,
+  hasSeed = false,
+): RelationsView {
+  if (raw === "series" || raw === "graph") return raw;
+  if (hasSeed) return "graph";
+  return DEFAULT_VIEW;
 }
 
-function writeRelationsViewToUrl(
+function writeRelationsUrl(
   pathname: string,
   searchParams: URLSearchParams,
   router: ReturnType<typeof useRouter>,
-  next: RelationsView,
+  next: { view?: RelationsView; seed?: string | null },
 ) {
   const params = new URLSearchParams(searchParams.toString());
-  if (next === DEFAULT_VIEW) params.delete("view");
-  else params.set("view", next);
+  if (next.view != null) {
+    if (next.view === DEFAULT_VIEW) params.delete("view");
+    else params.set("view", next.view);
+  }
+  if (next.seed !== undefined) {
+    if (!next.seed) params.delete("seed");
+    else params.set("seed", next.seed);
+  }
   const qs = params.toString();
   startTransition(() => {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   });
+}
+
+function toGraphPairs(
+  items: (CooccurrencePairLike & { lift?: number | null })[],
+): TechGraphPair[] {
+  return items.map((p) => ({
+    tech_a: String(p.tech_a),
+    tech_b: String(p.tech_b),
+    support: Number(p.support) || 0,
+    lift: typeof p.lift === "number" ? p.lift : null,
+  }));
 }
 
 function RelationsDashboardInner() {
@@ -73,16 +98,71 @@ function RelationsDashboardInner() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const viewFromUrl = parseRelationsView(searchParams.get("view"));
+  const { profile: localProfile, hydrated: profileHydrated } = useLocalProfile();
+  const seedFromUrl = searchParams.get("seed")?.trim() || null;
+  const viewFromUrl = parseRelationsView(
+    searchParams.get("view"),
+    Boolean(seedFromUrl),
+  );
   const [view, setViewState] = useState<RelationsView>(viewFromUrl);
+  const [seed, setSeedState] = useState<string | null>(seedFromUrl);
 
   useEffect(() => {
     setViewState(viewFromUrl);
   }, [viewFromUrl]);
 
+  useEffect(() => {
+    setSeedState(seedFromUrl);
+  }, [seedFromUrl]);
+
+  // When graph is open without ?seed=, default to first owned skill (My Stack).
+  useEffect(() => {
+    if (!profileHydrated) return;
+    if (seedFromUrl) return;
+    if (view !== "graph") return;
+    const first = localProfile.skills[0]?.trim();
+    if (!first) return;
+    writeRelationsUrl(pathname, searchParams, router, {
+      view: "graph",
+      seed: first,
+    });
+  }, [
+    profileHydrated,
+    seedFromUrl,
+    view,
+    localProfile.skills,
+    pathname,
+    router,
+    searchParams,
+  ]);
+
+  // Normalize bare ?seed= (no view) → graph. Explicit view=series|heat wins.
+  useEffect(() => {
+    if (!seedFromUrl) return;
+    if (searchParams.get("view") != null) return;
+    writeRelationsUrl(pathname, searchParams, router, {
+      view: "graph",
+      seed: seedFromUrl,
+    });
+  }, [seedFromUrl, pathname, router, searchParams]);
+
   const setView = (next: RelationsView) => {
     setViewState(next);
-    writeRelationsViewToUrl(pathname, searchParams, router, next);
+    const leavingGraph = next !== "graph";
+    if (leavingGraph) setSeedState(null);
+    writeRelationsUrl(pathname, searchParams, router, {
+      view: next,
+      seed: leavingGraph ? null : undefined,
+    });
+  };
+
+  const setSeed = (next: string | null) => {
+    setSeedState(next);
+    writeRelationsUrl(pathname, searchParams, router, {
+      view: next ? "graph" : undefined,
+      seed: next,
+    });
+    if (next) setViewState("graph");
   };
   const [cooc, setCooc] = useState<CooccurrencePayload | null>(null);
   const [matrix, setMatrix] = useState<TechCountryMatrix | null>(null);
@@ -268,12 +348,23 @@ function RelationsDashboardInner() {
           seniorityTech={seniorityTech}
           seniorityTechHeatValues={seniorityTechHeatValues}
         />
-      ) : (
+      ) : view === "series" ? (
         <RelationsSeriesPanel
           periodDays={periodDays}
           techSeries={techSeries}
           countrySeries={countrySeries}
           ratesSeries={ratesSeries}
+        />
+      ) : (
+        <RelationsGraphPanel
+          periodDays={periodDays}
+          lens={lens}
+          queryIds={queryIds}
+          countries={countries}
+          overviewPairs={toGraphPairs(cooc?.items ?? [])}
+          jobsAnalyzed={cooc?.jobs_analyzed ?? null}
+          seed={seed}
+          onSeedChange={setSeed}
         />
       )}
     </div>

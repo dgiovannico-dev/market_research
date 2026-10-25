@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:fsd": "node scripts/check-fsd-imports.mjs",
-    "test:unit": "node --test --experimental-strip-types lib/jobsListParams.test.ts lib/catalogFilters.test.ts lib/riseCoolPick.test.ts lib/cooccurrenceHeat.test.ts shared/api/query.test.ts shared/api/http.test.ts shared/lib/tableFilter.test.ts shared/lib/formatDateTime.test.ts shared/lib/tableSort.test.ts && npm run test:fsd"
+    "test:unit": "node --test --experimental-strip-types lib/jobsListParams.test.ts lib/catalogFilters.test.ts lib/riseCoolPick.test.ts lib/cooccurrenceHeat.test.ts shared/api/query.test.ts shared/api/http.test.ts shared/lib/tableFilter.test.ts shared/lib/formatDateTime.test.ts shared/lib/tableSort.test.ts shared/lib/buildTechGraph.test.ts features/country-filter/toggleCountrySelection.test.ts && npm run test:fsd"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.74.4",

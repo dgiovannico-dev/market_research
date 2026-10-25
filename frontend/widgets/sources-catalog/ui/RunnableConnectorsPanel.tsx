@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ConnectorKindBadge } from "@/entities/source";
+import { useClientPageWindow } from "@/shared/hooks/useClientPageWindow";
+import { ScrollLoadFooter } from "@/shared/ui/ScrollLoadFooter";
 import { RunSourceButton } from "./RunSourceButton";
 import { SourceStatusBadge } from "@/entities/source";
 import { formatDateMinute } from "@/shared/lib/formatDateTime";
@@ -45,6 +47,16 @@ export function RunnableConnectorsPanel({ sources }: { sources: RunnableSource[]
 
   const freeCount = sources.filter((s) => !s.is_credentialed_scaffold).length;
   const credCount = sources.length - freeCount;
+  const {
+    visible,
+    hasMore,
+    isExpanded,
+    loadMore,
+    expandAll,
+    collapse,
+    shown,
+    total,
+  } = useClientPageWindow(filtered, 12, `${kind}|${filtered.length}`);
 
   function statusLabel(status: string): string {
     if (!status) return "—";
@@ -90,7 +102,7 @@ export function RunnableConnectorsPanel({ sources }: { sources: RunnableSource[]
         </div>
       ) : (
         <div className="grid gap-3">
-          {filtered.map((s) => {
+          {visible.map((s) => {
             const inserts = hasInsertEvidence(s);
             const insertRuns = Number(s.insert_runs_count ?? 0);
             const lastInsert = s.last_insert_at
@@ -164,6 +176,17 @@ export function RunnableConnectorsPanel({ sources }: { sources: RunnableSource[]
           })}
         </div>
       )}
+      {filtered.length > 0 ? (
+        <ScrollLoadFooter
+          hasMore={hasMore}
+          isExpanded={isExpanded}
+          onLoadMore={loadMore}
+          onExpandAll={expandAll}
+          onCollapse={collapse}
+          shown={shown}
+          total={total}
+        />
+      ) : null}
     </section>
   );
 }

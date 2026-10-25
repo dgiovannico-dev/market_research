@@ -31,6 +31,11 @@ export type GeoWorldMapProps = {
   sampleSize?: number | null;
   title?: string;
   className?: string;
+  /**
+   * Analytics pages: filter in-place (CountryFilter / local selection).
+   * When omitted, click drills to Jobs for that ISO2.
+   */
+  onCountryClick?: (iso2: string) => void;
 };
 
 let worldRegistered = false;
@@ -56,6 +61,7 @@ export function GeoWorldMap({
   sampleSize = null,
   title,
   className,
+  onCountryClick,
 }: GeoWorldMapProps) {
   const t = useTranslations("charts");
   const router = useRouter();
@@ -139,10 +145,14 @@ export function GeoWorldMap({
       click: (params: { data?: { iso2?: string } }) => {
         const iso = params.data?.iso2;
         if (!iso) return;
-        router.push(`/jobs?country=${encodeURIComponent(iso)}`);
+        if (onCountryClick) {
+          onCountryClick(iso);
+          return;
+        }
+        router.push(`/jobs?countries=${encodeURIComponent(iso)}`);
       },
     }),
-    [router],
+    [onCountryClick, router],
   );
 
   return (
@@ -171,7 +181,7 @@ export function GeoWorldMap({
       {!empty && ready ? (
         <ReactECharts
           option={option}
-          style={{ height: 360, width: "100%" }}
+          style={{ height: 360, width: "100%", cursor: "pointer" }}
           opts={{ renderer: "canvas" }}
           onEvents={onEvents}
         />

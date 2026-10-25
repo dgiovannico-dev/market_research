@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, Sequence
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, aliased
 
 from app.analytics.country_filter import parse_country_codes
@@ -20,6 +20,12 @@ from app.analytics.lenses import compare_counts, parse_lens, resolve_job_id_subq
 from app.storage.models import Job, JobSkill, Technology
 
 
+def _clamp_neighbor_limit(neighbor_limit: Optional[int]) -> Optional[int]:
+    if neighbor_limit is None:
+        return None
+    return max(1, min(int(neighbor_limit), 100))
+
+
 def skill_cooccurrence(
     db: Session,
     *,
@@ -29,11 +35,16 @@ def skill_cooccurrence(
     lens: Optional[str] = None,
     query_ids: Optional[Sequence[int]] = None,
     min_evidence: Optional[str] = DEFAULT_MIN_EVIDENCE,
+    seed: Optional[str] = None,
+    neighbor_limit: Optional[int] = None,
 ) -> dict[str, Any]:
     lens_name = parse_lens(lens)
     job_id_subq = resolve_job_id_subquery(db, lens_name, query_ids)
     codes = parse_country_codes(country_code)
     tier = parse_min_evidence(min_evidence)
+    seed_raw = (seed or "").strip() or None
+    seed_name = seed_raw
+    neighbor_cap = _clamp_neighbor_limit(neighbor_limit)
     now = datetime.now(timezone.utc)
     date_from = now - timedelta(days=days)
     corpus_all = base_job_query(
@@ -68,6 +79,21 @@ def skill_cooccurrence(
     js_b = aliased(JobSkill)
     tech_a = aliased(Technology)
     tech_b = aliased(Technology)
+    pair_where = [js_a.job_id.in_(job_ids)]
+    if seed_raw:
+        # Case-insensitive match; prefer the label as stored in Technology.
+        canon = db.scalar(
+            select(Technology.canonical_name).where(
+                func.lower(Technology.canonical_name) == seed_raw.lower()
+            ).limit(1)
+        )
+        seed_name = canon or seed_raw
+        pair_where.append(
+            or_(
+                func.lower(tech_a.canonical_name) == seed_raw.lower(),
+                func.lower(tech_b.canonical_name) == seed_raw.lower(),
+            )
+        )
     pair_rows = db.execute(
         select(
             tech_a.canonical_name,
@@ -84,7 +110,7 @@ def skill_cooccurrence(
         )
         .join(tech_a, tech_a.id == js_a.technology_id)
         .join(tech_b, tech_b.id == js_b.technology_id)
-        .where(js_a.job_id.in_(job_ids))
+        .where(*pair_where)
         .group_by(tech_a.canonical_name, tech_b.canonical_name)
         .having(func.count(func.distinct(js_a.job_id)) >= min_support)
     ).all()
@@ -113,6 +139,10 @@ def skill_cooccurrence(
             }
         )
     items.sort(key=lambda x: (-x["support"], -(x["lift"] or 0)))
+    if seed_name and neighbor_cap is not None:
+        items = items[:neighbor_cap]
+    else:
+        items = items[:200]
     out: dict[str, Any] = {
         "period_days": days,
         "min_support": min_support,
@@ -120,7 +150,9 @@ def skill_cooccurrence(
         "query_ids": list(query_ids) if query_ids else None,
         "countries": codes or None,
         "jobs_analyzed": n_jobs,
-        "items": items[:200],
+        "seed": seed_name,
+        "neighbor_limit": neighbor_cap if seed_name else None,
+        "items": items,
         **evidence_meta(min_evidence=tier, excluded_thin_n=excluded_thin_n),
     }
     if lens_name == "compare":

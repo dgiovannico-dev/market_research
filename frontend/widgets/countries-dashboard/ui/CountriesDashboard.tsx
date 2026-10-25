@@ -5,7 +5,10 @@ import { useTranslations } from "next-intl";
 import { useDashboardLensQuery } from "@/features/dashboard-query";
 import { api, type CountryComparison, type CountryComparisonItem } from "@/lib/api";
 import { useDashboardPrefs } from "@/features/dashboard-prefs";
-import { useDashboardCountries } from "@/features/country-filter";
+import {
+  nextCountriesOnClick,
+  useDashboardCountries,
+} from "@/features/country-filter";
 import {
   LensToggle,
   useDashboardLens,
@@ -37,7 +40,13 @@ const theadStyle = {
   background: "color-mix(in srgb, var(--paper) 85%, var(--card))",
 } as const;
 
-function CountriesTable({ items }: { items: CountryComparisonItem[] }) {
+function CountriesTable({
+  items,
+  onCountryClick,
+}: {
+  items: CountryComparisonItem[];
+  onCountryClick?: (iso2: string) => void;
+}) {
   const t = useTranslations("countries");
   const tCommon = useTranslations("common");
   const {
@@ -157,7 +166,17 @@ function CountriesTable({ items }: { items: CountryComparisonItem[] }) {
                     className="px-3 py-2.5 font-semibold"
                     style={{ fontFamily: "var(--mono)" }}
                   >
-                    {c.country_code}
+                    {onCountryClick ? (
+                      <button
+                        type="button"
+                        className="underline-offset-2 hover:text-[var(--signal)] hover:underline"
+                        onClick={() => onCountryClick(c.country_code)}
+                      >
+                        {c.country_code}
+                      </button>
+                    ) : (
+                      c.country_code
+                    )}
                   </td>
                   <td
                     className="px-3 py-2.5 text-right"
@@ -191,7 +210,10 @@ function CountriesTable({ items }: { items: CountryComparisonItem[] }) {
       {sorted.length > 0 ? (
         <ScrollLoadFooter
           hasMore={page.hasMore}
+          isExpanded={page.isExpanded}
           onLoadMore={page.loadMore}
+          onExpandAll={page.expandAll}
+          onCollapse={page.collapse}
           shown={page.shown}
           total={page.total}
         />
@@ -207,7 +229,9 @@ function CountriesDashboardInner() {
   const tCompass = useTranslations("compass");
   const { prefs, hydrated } = useDashboardPrefs();
   const { lens, queryIds } = useDashboardLens();
-  const { countries: countryCodes } = useDashboardCountries();
+  const { countries: countryCodes, setCountries } = useDashboardCountries();
+  const filterByCountry = (iso: string) =>
+    setCountries(nextCountriesOnClick(countryCodes, iso));
   const loadFailedMsg = t("loadFailed");
   const metricLegend = useMemo(
     () => [
@@ -296,6 +320,7 @@ function CountriesDashboardInner() {
           periodDays={prefs.period_days}
           sampleSize={sampleSize}
           title={t("worldMapTitle")}
+          onCountryClick={filterByCountry}
         />
       ) : null}
 
@@ -311,14 +336,20 @@ function CountriesDashboardInner() {
                 {tCompass("lensMarket")}
                 {data?.market_n != null ? ` · n=${data.market_n}` : ""}
               </h3>
-              <CountriesTable items={data?.market?.items ?? []} />
+              <CountriesTable
+                items={data?.market?.items ?? []}
+                onCountryClick={filterByCountry}
+              />
             </div>
             <div className="space-y-2">
               <h3 className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
                 {tCompass("lensFocus")}
                 {data?.focus_n != null ? ` · n=${data.focus_n}` : ""}
               </h3>
-              <CountriesTable items={data?.focus?.items ?? []} />
+              <CountriesTable
+                items={data?.focus?.items ?? []}
+                onCountryClick={filterByCountry}
+              />
             </div>
           </div>
         ) : (
@@ -327,7 +358,10 @@ function CountriesDashboardInner() {
           </div>
         )
       ) : (
-        <CountriesTable items={data?.items ?? []} />
+        <CountriesTable
+          items={data?.items ?? []}
+          onCountryClick={filterByCountry}
+        />
       )}
     </div>
   );

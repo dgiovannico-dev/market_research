@@ -11,7 +11,33 @@ curl -sf "$API/api/v1/dashboard/summary" >/dev/null
 curl -sf "$API/api/v1/market/rates" >/dev/null
 curl -sf "$API/api/v1/market/countries" >/dev/null
 curl -sf "$API/api/v1/market/skills/cooccurrence" >/dev/null
+curl -sf "$API/api/v1/market/certifications/top" >/dev/null
 curl -sf "$API/api/v1/profile/skill-gaps" >/dev/null
+# Client-owned skills body (ADR-009 localStorage path) — empty list OK
+curl -sf -X POST "$API/api/v1/profile/skill-gaps" \
+  -H "Content-Type: application/json" \
+  -d '{"skills":[]}' >/dev/null
+# Stack Compass learning-candidates (SPEC-stack-compass)
+curl -sf -X POST "$API/api/v1/profile/learning-candidates" \
+  -H "Content-Type: application/json" \
+  -d '{"skills":["Python","Kubernetes","AWS"],"include_rates":false}' | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+assert "candidates" in d or d.get("lens") == "compare" or d.get("error"), "learning-candidates shape"
+assert "score_version" in d or "market" in d, "learning-candidates score_version"
+'
+# Study Advisor plan (thin path OK — stub, no invented stack)
+curl -sf -X POST "$API/api/v1/profile/study-advice/plan" \
+  -H "Content-Type: application/json" \
+  -d '{"skills":["A"],"hours_per_week":4,"modality":"employed_part_time","horizon_weeks":4}' | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+assert d.get("mode") == "stub", "study-advice thin must be stub"
+assert "plan" in d and "evidence" in d, "study-advice shape"
+allowed = {c.get("technology") for c in (d.get("evidence") or {}).get("candidates") or []}
+for tech in (d.get("plan") or {}).get("stack_target") or []:
+    assert tech in allowed, "study-advice must not invent stack"
+'
 curl -sf "$API/api/v1/reports/weekly" >/dev/null
 curl -sf "$API/api/v1/llm/status" >/dev/null
 curl -sf "$API/api/v1/sources/catalog/summary" >/dev/null
@@ -68,5 +94,9 @@ if [ "${GEO_SMOKE:-0}" = "1" ]; then
   SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
   API_URL="$API" "$SCRIPT_DIR/smoke_geo_country.sh"
 fi
+
+# Keycloak role matrix (ADR-009): no-op unless OIDC_ENABLED + tokens set
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+API_URL="$API" "$SCRIPT_DIR/smoke_oidc_roles.sh"
 
 echo "smoke_e2e OK against $API"

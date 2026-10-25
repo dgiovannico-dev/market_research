@@ -1,0 +1,49 @@
+---
+description: Periodically relaunch and verify the full Docker Compose stack
+alwaysApply: true
+---
+
+# Docker Compose full-stack relaunch check
+
+Keep the **full** Compose stack (db, redis, api, frontend) verifiably running during long agent sessions.
+
+## When to relaunch
+
+Run `./scripts/compose_stack_relaunch.sh` when any of these apply:
+
+1. Session start reminder says the check is due (interval elapsed).
+2. User asks to verify stack / “continua” after ops or compose-related changes.
+3. You changed `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, or compose-facing env.
+4. API/frontend smoke fails and a clean stack restart is the next diagnostic step.
+
+## How
+
+```bash
+# normal (respects throttle, default 30 minutes)
+./scripts/compose_stack_relaunch.sh
+
+# force now
+COMPOSE_STACK_FORCE=1 ./scripts/compose_stack_relaunch.sh
+```
+
+Optional env:
+
+| Var | Default | Meaning |
+|-----|---------|---------|
+| `COMPOSE_STACK_MIN_INTERVAL_MINUTES` | `30` | Skip if last OK was newer |
+| `COMPOSE_STACK_FORCE` | `0` | `1` = ignore throttle |
+| `COMPOSE_STACK_WAIT_SEC` | `180` | Wait for health |
+| `COMPOSE_STACK_SKIP_SMOKE` | `0` | `1` = readyz + frontend only |
+| `COMPASS_SMOKE` | `1` (in relaunch) | Nested Demand Compass via smoke_e2e; `0` to skip |
+| `API_URL` / `FRONTEND_URL` | `http://127.0.0.1:8000` / `:3000` | Probe targets |
+
+Requires repo-root `.env` (from `.env.example`). Stamp file: `.cursor/compose-stack-last-ok` (gitignored).
+
+## Success criteria
+
+- Script exits 0
+- `GET /readyz` OK
+- Frontend URL responds
+- Unless skipped: `backend/scripts/smoke_e2e.sh` OK (includes Demand Compass unless `COMPASS_SMOKE=0`)
+
+On failure: report `docker compose ps` + last api/frontend logs; do not claim the stack is healthy.

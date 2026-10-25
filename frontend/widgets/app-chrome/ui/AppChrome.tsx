@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { NAV_ZONES } from "@/lib/navZones";
+import { useAuth } from "@/features/auth";
 import {
   PrefsPanel,
   useDashboardPrefs,
@@ -13,6 +14,7 @@ import {
   CountryFilter,
 } from "@/features/country-filter";
 import { PrimaryNav } from "./PrimaryNav";
+import { SiteFooter } from "./SiteFooter";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 
 export function AppChrome({ children }: { children: ReactNode }) {
@@ -21,6 +23,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { prefs, setViewMode, setLocale, hydrated } = useDashboardPrefs();
+  const auth = useAuth();
   const [panelOpen, setPanelOpen] = useState(false);
   const hidden = new Set(prefs.nav_hidden);
   const showCountryFilter = ANALYTICS_COUNTRY_PATHS.has(pathname);
@@ -45,7 +48,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--card)_82%,transparent)] backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl flex-col gap-2.5 px-4 py-3">
           {/* Row 1: brand + chrome controls (never share a wrap line with nav). */}
@@ -115,6 +118,26 @@ export function AppChrome({ children }: { children: ReactNode }) {
                   {t("trendsOnly")}
                 </button>
               </div>
+              {auth.enabled ? (
+                auth.authenticated ? (
+                  <button
+                    type="button"
+                    className="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs hover:border-[var(--signal)]"
+                    onClick={() => void auth.logout()}
+                  >
+                    {t("signOut")}
+                    {auth.isAdmin ? " · admin" : ""}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs hover:border-[var(--signal)]"
+                    onClick={() => void auth.login()}
+                  >
+                    {t("signIn")}
+                  </button>
+                )
+              ) : null}
               <button
                 type="button"
                 className="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs hover:border-[var(--signal)]"
@@ -138,7 +161,8 @@ export function AppChrome({ children }: { children: ReactNode }) {
           {panelOpen ? <PrefsPanel onClose={() => setPanelOpen(false)} /> : null}
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">{children}</main>
+      <SiteFooter />
     </div>
   );
 }

@@ -1,11 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ApiNotReadyState } from "@/features/research-intents";
+import { type ResearchIntent } from "@/entities/research-intent";
+import { ApiNotReadyState, useResearchIntents } from "@/features/research-intents";
+import { useClientPageWindow } from "@/shared/hooks/useClientPageWindow";
+import { ScrollLoadFooter } from "@/shared/ui/ScrollLoadFooter";
 import { CreateFocusForm } from "./CreateFocusForm";
 import { FocusIntentCard } from "./FocusIntentCard";
 import { IntentCountriesSuggest } from "./IntentCountriesSuggest";
-import { useResearchIntents } from "@/features/research-intents";
 
 export function FocusPanel() {
   const t = useTranslations("research");
@@ -39,6 +41,45 @@ export function FocusPanel() {
   }
 
   return (
+    <FocusPanelReady
+      items={state.items}
+      actionError={actionError}
+      busyIds={busyIds}
+      create={create}
+      patch={patch}
+      sync={sync}
+    />
+  );
+}
+
+function FocusPanelReady({
+  items,
+  actionError,
+  busyIds,
+  create,
+  patch,
+  sync,
+}: {
+  items: ResearchIntent[];
+  actionError: string | null;
+  busyIds: Set<number>;
+  create: ReturnType<typeof useResearchIntents>["create"];
+  patch: ReturnType<typeof useResearchIntents>["patch"];
+  sync: ReturnType<typeof useResearchIntents>["sync"];
+}) {
+  const t = useTranslations("research");
+  const {
+    visible,
+    hasMore,
+    isExpanded,
+    loadMore,
+    expandAll,
+    collapse,
+    shown,
+    total,
+  } = useClientPageWindow(items, 8, items.length);
+
+  return (
     <div className="space-y-4">
       <header className="space-y-1">
         <p className="font-display text-xs uppercase tracking-[0.2em] signal-text">
@@ -59,13 +100,13 @@ export function FocusPanel() {
 
       {actionError ? <p className="text-sm text-[var(--warn)]">{actionError}</p> : null}
 
-      <IntentCountriesSuggest intents={state.items} />
+      <IntentCountriesSuggest intents={items} />
 
-      {state.items.length === 0 ? (
+      {items.length === 0 ? (
         <section className="card p-6 text-sm text-[var(--muted)]">{t("emptyFocus")}</section>
       ) : (
         <div className="space-y-3">
-          {state.items.map((intent) => (
+          {visible.map((intent) => (
             <FocusIntentCard
               key={intent.id}
               intent={intent}
@@ -74,6 +115,15 @@ export function FocusPanel() {
               onSync={() => void sync(intent.id)}
             />
           ))}
+          <ScrollLoadFooter
+            hasMore={hasMore}
+            isExpanded={isExpanded}
+            onLoadMore={loadMore}
+            onExpandAll={expandAll}
+            onCollapse={collapse}
+            shown={shown}
+            total={total}
+          />
         </div>
       )}
     </div>

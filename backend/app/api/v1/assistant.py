@@ -51,6 +51,8 @@ class ProposeBody(BaseModel):
     # CSV ISO codes — same contract as market/summary ?country_code=
     country_code: Optional[str] = Field(default=None, max_length=64)
     locale: LocaleType = "en"
+    # Client localStorage skills (ADR-009) for adjacent / suggest_watches
+    owned_skills: Optional[list[str]] = None
 
 
 class BriefBody(BaseModel):
@@ -62,6 +64,8 @@ class BriefBody(BaseModel):
     # CSV ISO codes — same contract as market/summary ?country_code=
     country_code: Optional[str] = Field(default=None, max_length=64)
     locale: LocaleType = "en"
+    # Client localStorage skills (ADR-009) for adjacent / suggest_watches
+    owned_skills: Optional[list[str]] = None
 
 
 def _locale_meta(locale: LocaleType) -> dict[str, Any]:
@@ -84,6 +88,7 @@ def _run_brief(db: Session, body: BriefBody | ProposeBody) -> dict[str, Any]:
         query_ids=body.query_ids,
         period_days=body.period_days,
         country_code=body.country_code,
+        owned_skills=body.owned_skills,
     )
     return {"kind": "brief", "brief": result, "meta": _locale_meta(body.locale)}
 

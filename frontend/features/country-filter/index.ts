@@ -5,3 +5,4 @@ export {
   useDashboardCountries,
 } from "./ui/CountryFilter";
 export { CountryFilterBoundary } from "./ui/CountryFilterBoundary";
+export { nextCountriesOnClick } from "./toggleCountrySelection";

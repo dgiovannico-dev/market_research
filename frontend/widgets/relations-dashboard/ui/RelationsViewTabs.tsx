@@ -3,7 +3,7 @@
 import { useId } from "react";
 import { useTranslations } from "next-intl";
 
-export type RelationsView = "heat" | "series";
+export type RelationsView = "heat" | "series" | "graph";
 
 type RelationsViewTabsProps = {
   value: RelationsView;
@@ -11,11 +11,11 @@ type RelationsViewTabsProps = {
   className?: string;
 };
 
-const OPTIONS: readonly RelationsView[] = ["heat", "series"];
+const OPTIONS: readonly RelationsView[] = ["heat", "series", "graph"];
 
 /**
  * Sticky-ish segment control for Relations chart groups.
- * Composition: parent swaps HeatmapsPanel / SeriesPanel — no boolean chart soup.
+ * Composition: parent swaps HeatmapsPanel / SeriesPanel / GraphPanel.
  */
 export function RelationsViewTabs({
   value,
@@ -41,7 +41,11 @@ export function RelationsViewTabs({
         {OPTIONS.map((option) => {
           const selected = value === option;
           const label =
-            option === "heat" ? t("tabHeatmaps") : t("tabSeries");
+            option === "heat"
+              ? t("tabHeatmaps")
+              : option === "series"
+                ? t("tabSeries")
+                : t("tabGraph");
           return (
             <button
               key={option}

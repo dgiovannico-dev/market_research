@@ -1,0 +1,103 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fmi.frontend.fullname" . }}
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  type: {{ .Values.frontend.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.frontend.service.port }}
+      targetPort: http
+  selector:
+    {{- include "fmi.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fmi.frontend.fullname" . }}
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "fmi.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "fmi.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: frontend
+          image: {{ include "fmi.image" (dict "global" .Values.global "repository" .Values.frontend.image.repository "tag" .Values.frontend.image.tag) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: {{ .Values.frontend.publicApiUrl | quote }}
+            - name: INTERNAL_API_URL
+              value: {{ include "fmi.frontend.internalApiUrl" . | quote }}
+            - name: NEXT_PUBLIC_OIDC_ENABLED
+              value: {{ .Values.frontend.oidc.enabled | ternary "true" "false" | quote }}
+            - name: NEXT_PUBLIC_KEYCLOAK_URL
+              value: {{ .Values.frontend.oidc.keycloakUrl | quote }}
+            - name: NEXT_PUBLIC_KEYCLOAK_REALM
+              value: {{ .Values.frontend.oidc.realm | quote }}
+            - name: NEXT_PUBLIC_OIDC_CLIENT_ID
+              value: {{ .Values.frontend.oidc.clientId | quote }}
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: "0.0.0.0"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+{{- if and .Values.frontend.pdb.enabled (gt (int .Values.frontend.replicaCount) 1) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "fmi.frontend.fullname" . }}
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  minAvailable: {{ .Values.frontend.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "fmi.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
+{{- end }}
+{{- end }}

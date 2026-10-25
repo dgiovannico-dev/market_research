@@ -72,7 +72,7 @@ class BambooHRCollector(BaseCollector):
                 records=[],
                 errors=[
                     "BAMBOOHR_COMPANIES empty — probe careers/list then set CSV "
-                    "(docs/sources/ATS_TENANTS.md)"
+                    "(data/sources/catalog.json)"
                 ],
             )
         errors: list[str] = []

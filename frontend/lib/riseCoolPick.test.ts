@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   pickRiseCoolRows,
   riseCoolCorpusSampleSize,
+  riseCoolSlotTargets,
   type RiseCoolSourceItem,
 } from "./riseCoolPick.ts";
 
@@ -51,7 +52,7 @@ describe("pickRiseCoolRows", () => {
     assert.equal(rows.filter((r) => r.side === "cool").length, 3);
   });
 
-  it("backfills from the other side when one side is thin", () => {
+  it("does not backfill when one side is thin (strict half)", () => {
     const thinRise = [
       item("OnlyRise", 50),
       item("C1", -10),
@@ -61,9 +62,18 @@ describe("pickRiseCoolRows", () => {
       item("C5", -50),
     ];
     const rows = pickRiseCoolRows(thinRise, 6);
-    assert.equal(rows.length, 6);
+    assert.equal(rows.length, 4);
     assert.equal(rows.filter((r) => r.side === "rise").length, 1);
-    assert.equal(rows.filter((r) => r.side === "cool").length, 5);
+    assert.equal(rows.filter((r) => r.side === "cool").length, 3);
+    assert.deepEqual(riseCoolSlotTargets(6), { riseSlots: 3, coolSlots: 3 });
+  });
+
+  it("leaves cool empty when corpus has only rising", () => {
+    const onlyRise = [item("A", 80), item("B", 60), item("C", 40), item("D", 20)];
+    const rows = pickRiseCoolRows(onlyRise, 10);
+    assert.equal(rows.length, 4);
+    assert.equal(rows.filter((r) => r.side === "rise").length, 4);
+    assert.equal(rows.filter((r) => r.side === "cool").length, 0);
   });
 
   it("ignores non-ok and null growth", () => {

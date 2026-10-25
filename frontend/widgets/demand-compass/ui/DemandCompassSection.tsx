@@ -19,6 +19,7 @@ import {
   type AssistantLocale,
   type EvidenceBrief,
 } from "@/lib/api";
+import { useLocalProfile } from "@/features/user-profile";
 
 function DemandCompassInner() {
   const t = useTranslations("assistant");
@@ -27,6 +28,7 @@ function DemandCompassInner() {
   const { prefs } = useDashboardPrefs();
   const { lens, queryIds } = useDashboardLens();
   const { countries } = useDashboardCountries();
+  const { profile } = useLocalProfile();
   const [active, setActive] = useState<AssistantBriefType | null>(null);
   const [brief, setBrief] = useState<EvidenceBrief | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +46,10 @@ function DemandCompassInner() {
         period_days: prefs.period_days,
         country_code: countries.length ? countries.join(",") : undefined,
         locale,
+        owned_skills:
+          briefType === "adjacent" || briefType === "suggest_watches"
+            ? profile.skills
+            : undefined,
       });
       setBrief(data.brief);
     } catch (e) {

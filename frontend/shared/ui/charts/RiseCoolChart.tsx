@@ -14,6 +14,7 @@ import {
 import {
   pickRiseCoolRows,
   riseCoolCorpusSampleSize,
+  riseCoolSlotTargets,
 } from "@/lib/riseCoolPick";
 
 const THIN_THRESHOLD = 3;
@@ -53,6 +54,33 @@ export function RiseCoolChart({
   const rows = useMemo(() => pickRiseCoolRows(items, topN), [items, topN]);
   const empty = rows.length === 0;
   const thin = !empty && rows.length < THIN_THRESHOLD;
+  const { riseSlots, coolSlots } = riseCoolSlotTargets(topN);
+  const riseShown = rows.filter((r) => r.side === "rise").length;
+  const coolShown = rows.filter((r) => r.side === "cool").length;
+  const balanceNote =
+    !empty && (riseShown < riseSlots || coolShown < coolSlots)
+      ? coolShown === 0
+        ? t("riseCoolNoCooling", {
+            n: topN,
+            rise: riseSlots,
+            cool: coolSlots,
+            shown: riseShown,
+          })
+        : riseShown === 0
+          ? t("riseCoolNoRising", {
+              n: topN,
+              rise: riseSlots,
+              cool: coolSlots,
+              shown: coolShown,
+            })
+          : t("riseCoolBalanceNote", {
+              n: topN,
+              rise: riseSlots,
+              cool: coolSlots,
+              shownRise: riseShown,
+              shownCool: coolShown,
+            })
+      : null;
   const corpusN = riseCoolCorpusSampleSize(items);
   const sampleSize =
     sampleSizeProp != null && sampleSizeProp > 0
@@ -138,8 +166,10 @@ export function RiseCoolChart({
       sampleSize={empty ? null : sampleSize}
       empty={empty}
       thin={thin}
+      note={balanceNote}
       topN={topN}
       onTopNChange={onTopNChange}
+      topNAriaLabel={t("topNAriaRiseCool")}
       xAxisLabel={t("axisGrowthPct")}
       guideRepresents={t("guideRiseCool")}
       guideHowToRead={t("guideRiseCoolRead")}

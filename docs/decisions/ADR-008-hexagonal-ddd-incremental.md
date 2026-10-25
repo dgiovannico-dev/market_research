@@ -21,7 +21,7 @@ Adopt Hexagonal + DDD **incrementally by seam**:
 3. **CQRS-light only.** Keep `analytics/` as SQL read adapters; no projected read DB or per-KPI repositories until a second store is required.
 4. **Single crawl path.** HTTP `POST /sources/{id}/run` and the daily scheduler share one `RunSource` use case.
 5. **Thin domain package.** Extract pure invariants (classification rules, evidence tier, closed-status corpus set) first; introduce a write-side `Job` aggregate only when status FSM / canonical merge demand it.
-6. **One deployable package.** Folder moves follow [plan 2026-10-23](../superpowers/plans/2026-10-23-backend-hexagonal-ddd.md); no microservices split.
+6. **One deployable package.** Folder layout is documented in [architecture/OVERVIEW.md](../architecture/OVERVIEW.md); no microservices split.
 
 ## Alternatives considered
 

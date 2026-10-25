@@ -113,13 +113,21 @@ async def llm_classification_run(
 
 
 @router.get("/llm/status")
-async def llm_status_ops() -> dict[str, Any]:
+async def llm_status_ops(db: Session = Depends(get_db)) -> dict[str, Any]:
+    from app.adapters.driven.llm.provider import get_llm_provider
+    from app.application.llm.runtime_config import resolve_llm_settings
+
     container = get_container()
     settings = container.settings
-    health = await container.llm().health()
+    cfg = resolve_llm_settings(db)
+    health = await get_llm_provider(db).health()
     return {
         "classification_mode": settings.classification_mode,
-        "configured_provider": settings.llm_provider,
+        "configured_provider": cfg.provider,
+        "env_provider": settings.llm_provider,
+        "source": cfg.source,
+        "model": cfg.model or None,
+        "enable_study_advisor": cfg.enable_study_advisor,
         **health,
     }
 

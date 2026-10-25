@@ -1,4 +1,4 @@
-"""Ops-driven LLM classification overlay on top of domain rules (Wave 4 deferred)."""
+"""Ops-driven LLM classification overlay on top of domain rules."""
 
 from __future__ import annotations
 
@@ -8,8 +8,10 @@ from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.adapters.driven.llm.provider import get_llm_provider
+from app.application.llm.prompts import resolve_prompt
+from app.application.llm.runtime_config import resolve_llm_settings
 from app.application.ports.driven.llm_gateway import LlmGateway
-from app.bootstrap import get_container
 from app.domain.classification import classify_job
 from app.storage.models import Job
 
@@ -31,16 +33,24 @@ async def run_llm_classification(
     limit: int = 20,
     llm: LlmGateway | None = None,
 ) -> dict[str, Any]:
-    container = get_container()
-    settings = container.settings
-    provider = llm or container.llm()
+    cfg = resolve_llm_settings(db)
+    provider = llm or get_llm_provider(db)
     health = await provider.health()
-    if settings.llm_provider == "none" or not health.get("healthy"):
+    if cfg.provider == "none" or not cfg.enable_classify or not health.get("healthy"):
         return {
             "status": "skipped",
-            "reason": "LLM offline or provider=none; rules classification remains active",
+            "reason": "LLM offline, disabled, or provider=none; rules classification remains active",
             "health": health,
         }
+
+    try:
+        prompt = resolve_prompt(
+            db,
+            slug="classify_job",
+            variables={"schema_keys": str(list(LlmJobExtraction.model_json_schema().get("properties", {}).keys()))},
+        )
+    except ValueError:
+        prompt = None
 
     jobs = db.scalars(
         select(Job).where(Job.is_canonical.is_(True)).order_by(Job.id.desc()).limit(limit)
@@ -56,10 +66,27 @@ async def run_llm_classification(
         validated = None
         error = None
         try:
-            raw = await provider.classify_text(
-                text,
-                schema_hint=LlmJobExtraction.model_json_schema(),
-            )
+            if prompt:
+                raw_text = await provider.chat(
+                    [
+                        {"role": "system", "content": prompt["system"]},
+                        {
+                            "role": "user",
+                            "content": prompt["user"].replace("{{text}}", text[:12000])
+                            if "{{text}}" in prompt["user"]
+                            else f"{prompt['user']}\n\nTEXT:\n{text[:12000]}",
+                        },
+                    ],
+                    response_json=True,
+                )
+                import json
+
+                raw = json.loads(raw_text or "{}")
+            else:
+                raw = await provider.classify_text(
+                    text,
+                    schema_hint=LlmJobExtraction.model_json_schema(),
+                )
             try:
                 validated = LlmJobExtraction.model_validate(raw)
             except ValidationError:
@@ -96,4 +123,5 @@ async def run_llm_classification(
         "processed": len(results),
         "results": results,
         "health": health,
+        "prompt_version": prompt.get("version") if prompt else None,
     }

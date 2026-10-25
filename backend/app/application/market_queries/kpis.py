@@ -17,9 +17,15 @@ def dashboard_summary(
     country_code: Optional[str] = None,
     lens: Optional[str] = None,
     query_ids: Optional[Sequence[int]] = None,
+    top_n: int = 100,
 ) -> dict[str, Any]:
     return _kpis.dashboard_summary(
-        db, days=days, country_code=country_code, lens=lens, query_ids=query_ids
+        db,
+        days=days,
+        country_code=country_code,
+        lens=lens,
+        query_ids=query_ids,
+        top_n=top_n,
     )
 
 

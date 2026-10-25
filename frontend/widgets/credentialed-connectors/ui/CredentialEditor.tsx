@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { canSeeAdminConfig, useAuth } from "@/features/auth";
 import {
+  canEditCredentials,
   deleteConnectorCredentials,
   fetchCredentialFields,
   putConnectorCredentials,
@@ -55,18 +57,21 @@ export function CredentialEditor({
   onClose,
 }: Props) {
   const t = useTranslations("sources");
+  const { isAdmin, enabled: oidcOn } = useAuth();
+  const visible = canSeeAdminConfig({ enabled: oidcOn, isAdmin });
   const [opsToken, setOpsToken] = useState("");
   const [meta, setMeta] = useState<FieldsResponse | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const allowed = visible && (canEditCredentials(opsToken) || isAdmin);
 
   useEffect(() => {
     setOpsToken(readOpsToken());
   }, []);
 
   useEffect(() => {
-    if (!opsToken.trim()) {
+    if (!allowed) {
       setMeta(null);
       return;
     }
@@ -102,7 +107,7 @@ export function CredentialEditor({
     return () => {
       cancelled = true;
     };
-  }, [connectorKey, opsToken, t]);
+  }, [connectorKey, opsToken, t, allowed]);
 
   async function save() {
     setBusy(true);
@@ -158,6 +163,8 @@ export function CredentialEditor({
     }
   }
 
+  if (!visible) return null;
+
   return (
     <div
       className="mt-2 rounded border border-[var(--line)] bg-[var(--panel)] p-3 text-xs"
@@ -176,18 +183,24 @@ export function CredentialEditor({
           {t("credEditorClose")}
         </button>
       </div>
-      <label className="mt-2 block">
-        <span className="opacity-70">{t("credOpsTokenLabel")}</span>
-        <input
-          type="password"
-          autoComplete="off"
-          className="mt-1 w-full rounded border border-[var(--line)] bg-transparent px-2 py-1"
-          value={opsToken}
-          onChange={(e) => setOpsToken(e.target.value)}
-          placeholder={t("credOpsTokenPlaceholder")}
-        />
-      </label>
-      <p className="mt-1 opacity-60">{t("credOpsTokenHint")}</p>
+      {!oidcOn ? (
+        <>
+          <label className="mt-2 block">
+            <span className="opacity-70">{t("credOpsTokenLabel")}</span>
+            <input
+              type="password"
+              autoComplete="off"
+              className="mt-1 w-full rounded border border-[var(--line)] bg-transparent px-2 py-1"
+              value={opsToken}
+              onChange={(e) => setOpsToken(e.target.value)}
+              placeholder={t("credOpsTokenPlaceholder")}
+            />
+          </label>
+          <p className="mt-1 opacity-60">{t("credOpsTokenHint")}</p>
+        </>
+      ) : (
+        <p className="mt-2 opacity-60">{t("credAdminJwtHint")}</p>
+      )}
       {error ? <p className="mt-2 text-red-700">{error}</p> : null}
       {meta ? (
         <ul className="mt-3 space-y-2">
@@ -215,7 +228,7 @@ export function CredentialEditor({
             </li>
           ))}
         </ul>
-      ) : opsToken.trim() ? (
+      ) : allowed ? (
         <p className="mt-2 opacity-60">{t("credLoading")}</p>
       ) : (
         <p className="mt-2 opacity-60">{t("credOpsTokenNeeded")}</p>
@@ -224,7 +237,7 @@ export function CredentialEditor({
         <button
           type="button"
           className="rounded border border-[var(--line)] px-2 py-1 disabled:opacity-40"
-          disabled={busy || !opsToken.trim() || !meta}
+          disabled={busy || !allowed || !meta}
           onClick={() => void save()}
         >
           {t("credSave")}
@@ -232,7 +245,7 @@ export function CredentialEditor({
         <button
           type="button"
           className="rounded border border-[var(--line)] px-2 py-1 text-red-800 disabled:opacity-40"
-          disabled={busy || !opsToken.trim()}
+          disabled={busy || !allowed}
           onClick={() => void remove()}
         >
           {t("credDeleteDb")}

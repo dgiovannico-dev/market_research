@@ -37,6 +37,8 @@ export const assistantApi = {
     country_code?: string;
     prompt?: string;
     locale?: AssistantLocale;
+    /** LocalStorage profile skills (ADR-009) for adjacent / suggest_watches. */
+    owned_skills?: string[];
   }) => {
     return requestJSON<{
       kind: "brief";

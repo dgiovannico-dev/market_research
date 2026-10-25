@@ -19,6 +19,7 @@ def render_demand_brief(
     query_ids: Optional[Sequence[int]] = None,
     period_days: int = 90,
     country_code: Optional[str] = None,
+    owned_skills: Optional[Sequence[str]] = None,
 ) -> dict[str, Any]:
     """Return structured brief JSON from ``render_brief`` (never invents KPIs)."""
     return render_brief(
@@ -28,4 +29,5 @@ def render_demand_brief(
         query_ids=query_ids,
         period_days=period_days,
         country_code=country_code,
+        owned_skills=owned_skills,
     )

@@ -1,4 +1,5 @@
 export {
+  canEditCredentials,
   deleteConnectorCredentials,
   fetchCredentialFields,
   putConnectorCredentials,

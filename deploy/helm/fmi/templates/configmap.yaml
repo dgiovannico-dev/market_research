@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fmi.configMapName" . }}
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.api.env.APP_ENV | quote }}
+  LOG_LEVEL: {{ .Values.api.env.LOG_LEVEL | quote }}
+  CLASSIFICATION_MODE: {{ .Values.api.env.CLASSIFICATION_MODE | quote }}
+  LLM_PROVIDER: {{ .Values.api.env.LLM_PROVIDER | quote }}
+  ENABLE_SCHEDULER: {{ .Values.api.env.ENABLE_SCHEDULER | quote }}
+  RATE_LIMIT_BACKEND: {{ .Values.api.env.RATE_LIMIT_BACKEND | quote }}
+  RATE_LIMIT_PER_MINUTE: {{ .Values.api.env.RATE_LIMIT_PER_MINUTE | quote }}
+  SECURITY_HEADERS_ENABLED: {{ .Values.api.env.SECURITY_HEADERS_ENABLED | quote }}
+  API_CORS_ORIGINS: {{ .Values.api.env.API_CORS_ORIGINS | quote }}
+  OIDC_ENABLED: {{ .Values.oidc.enabled | ternary "true" "false" | quote }}
+  OIDC_ISSUER: {{ .Values.oidc.issuer | quote }}
+  OIDC_AUDIENCE: {{ .Values.oidc.audience | quote }}
+  OIDC_CLIENT_ID: {{ .Values.oidc.clientId | quote }}
+  OIDC_JWKS_URL: {{ .Values.oidc.jwksUrl | quote }}
+  OIDC_REQUIRE_USER: {{ .Values.oidc.requireUser | ternary "true" "false" | quote }}
+  POSTGRES_USER: {{ .Values.postgres.auth.username | quote }}
+  POSTGRES_DB: {{ .Values.postgres.auth.database | quote }}
+  {{- range $k, $v := .Values.api.extraEnv }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}

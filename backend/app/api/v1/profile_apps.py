@@ -8,9 +8,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.analytics.learning_candidates import learning_candidates
 from app.analytics.outcomes import outcomes_summary
 from app.analytics.positioning import recommendations, skill_gaps
+from app.analytics.study_advice import (
+    build_evidence_pack,
+    generate_study_plan,
+    refine_study_plan,
+)
 from app.api.deps import verify_api_key
+from app.api.v1.query_params import min_evidence_query, parse_lens_params
 from app.storage.db import get_db
 from app.storage.models import ApplicationOutcome, Technology, UserProfile, UserSkill
 
@@ -95,6 +102,25 @@ def put_dashboard_prefs(body: DashboardPrefsBody, db: Session = Depends(get_db))
     return {"status": "saved", "profile_id": profile.id, "prefs": profile.dashboard_prefs}
 
 
+class SkillsBody(BaseModel):
+    """Client localStorage profile skills (ADR-009)."""
+
+    skills: list[str] = Field(default_factory=list)
+    country_code: Optional[str] = None
+    days: Optional[int] = None
+
+
+class LearningCandidatesBody(BaseModel):
+    """Stack Compass learning candidates (SPEC-stack-compass)."""
+
+    skills: list[str] = Field(default_factory=list)
+    certifications: Optional[list[str]] = None
+    country_code: Optional[str] = None
+    days: Optional[int] = None
+    top_n: Optional[int] = Field(default=15, ge=1, le=50)
+    include_rates: bool = True
+
+
 @router.get("/profile/skill-gaps")
 def profile_skill_gaps(
     db: Session = Depends(get_db),
@@ -106,6 +132,19 @@ def profile_skill_gaps(
     return skill_gaps(db, country_code=country_code)
 
 
+@router.post("/profile/skill-gaps")
+def profile_skill_gaps_from_skills(
+    body: SkillsBody,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    return skill_gaps(
+        db,
+        country_code=body.country_code,
+        days=body.days or 90,
+        owned_skills=body.skills,
+    )
+
+
 @router.get("/profile/recommendations")
 def profile_recommendations(
     db: Session = Depends(get_db),
@@ -115,6 +154,142 @@ def profile_recommendations(
     ),
 ) -> dict[str, Any]:
     return recommendations(db, country_code=country_code)
+
+
+@router.post("/profile/recommendations")
+def profile_recommendations_from_skills(
+    body: SkillsBody,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    return recommendations(
+        db,
+        country_code=body.country_code,
+        days=body.days or 60,
+        owned_skills=body.skills,
+    )
+
+
+@router.post("/profile/learning-candidates")
+def profile_learning_candidates(
+    body: LearningCandidatesBody,
+    db: Session = Depends(get_db),
+    lens: Optional[str] = Query(None, description="Omit for all jobs; market|focus|compare."),
+    query_ids: Optional[list[str]] = Query(None),
+    min_evidence: Optional[str] = Query(
+        None,
+        description="Corpus gate: standard (default), all, or thin.",
+    ),
+) -> dict[str, Any]:
+    """Complementary scarce skills to learn next (gaps + co-occurrence + score)."""
+    lens_name, qids = parse_lens_params(lens, query_ids)
+    return learning_candidates(
+        db,
+        owned_skills=body.skills,
+        owned_certifications=body.certifications,
+        days=body.days or 90,
+        country_code=body.country_code,
+        lens=lens_name,
+        query_ids=qids,
+        min_evidence=min_evidence_query(min_evidence),
+        top_n=body.top_n or 15,
+        include_rates=body.include_rates,
+    )
+
+
+class StudyEvidenceBody(BaseModel):
+    skills: list[str] = Field(default_factory=list)
+    certifications: Optional[list[str]] = None
+    hours_per_week: float = Field(default=6, gt=0, le=80)
+    modality: str = Field(default="employed_part_time")
+    horizon_weeks: int = Field(default=8, ge=1, le=52)
+    country_code: Optional[str] = None
+    days: Optional[int] = None
+
+
+class StudyPlanBody(StudyEvidenceBody):
+    pass
+
+
+class StudyRefineBody(BaseModel):
+    plan: dict[str, Any]
+    evidence: dict[str, Any]
+    message: str = Field(min_length=1, max_length=2000)
+
+
+@router.post("/profile/study-advice/evidence")
+def study_advice_evidence(
+    body: StudyEvidenceBody,
+    db: Session = Depends(get_db),
+    lens: Optional[str] = Query(None),
+    query_ids: Optional[list[str]] = Query(None),
+    min_evidence: Optional[str] = Query(None),
+) -> dict[str, Any]:
+    modality = body.modality
+    if modality not in (
+        "employed_part_time",
+        "freelance_full_time",
+        "intensive",
+    ):
+        raise HTTPException(400, "invalid modality")
+    lens_name, qids = parse_lens_params(lens, query_ids)
+    return build_evidence_pack(
+        db,
+        skills=body.skills,
+        certifications=body.certifications,
+        hours_per_week=body.hours_per_week,
+        modality=modality,  # type: ignore[arg-type]
+        horizon_weeks=body.horizon_weeks,
+        days=body.days or 90,
+        country_code=body.country_code,
+        lens=lens_name,
+        query_ids=qids,
+        min_evidence=min_evidence_query(min_evidence),
+    )
+
+
+@router.post("/profile/study-advice/plan")
+async def study_advice_plan(
+    body: StudyPlanBody,
+    db: Session = Depends(get_db),
+    lens: Optional[str] = Query(None),
+    query_ids: Optional[list[str]] = Query(None),
+    min_evidence: Optional[str] = Query(None),
+) -> dict[str, Any]:
+    modality = body.modality
+    if modality not in (
+        "employed_part_time",
+        "freelance_full_time",
+        "intensive",
+    ):
+        raise HTTPException(400, "invalid modality")
+    lens_name, qids = parse_lens_params(lens, query_ids)
+    evidence = build_evidence_pack(
+        db,
+        skills=body.skills,
+        certifications=body.certifications,
+        hours_per_week=body.hours_per_week,
+        modality=modality,  # type: ignore[arg-type]
+        horizon_weeks=body.horizon_weeks,
+        days=body.days or 90,
+        country_code=body.country_code,
+        lens=lens_name,
+        query_ids=qids,
+        min_evidence=min_evidence_query(min_evidence),
+    )
+    return await generate_study_plan(db, evidence)
+
+
+@router.post("/profile/study-advice/refine")
+async def study_advice_refine(
+    body: StudyRefineBody,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    return await refine_study_plan(
+        db,
+        plan=body.plan,
+        evidence=body.evidence,
+        user_message=body.message,
+    )
 
 
 @router.get("/applications")

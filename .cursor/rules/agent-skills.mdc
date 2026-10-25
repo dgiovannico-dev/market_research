@@ -18,3 +18,5 @@ Phase shortcuts (webapp):
 - Debug → `debugging-and-error-recovery`, `systematic-debugging`, `diagnosing-bugs`
 - Review → `code-review-and-quality`, `requesting-code-review`, `security-and-hardening`, `performance-optimization`, `web-design-guidelines`
 - Ship → `verification-before-completion`, `ci-cd-and-automation`, `shipping-and-launch`, `review-and-ship`
+- Docs → `documentation-and-adrs`, `doc-coauthoring`, `design-doc-mermaid`, `architecture-blueprint-generator`, `documentation-writer`, `app-docs`, `technical-writing`, `openapi-spec-generation`
+- Ops / DevOps manuals → `writing-runbooks`, `incident-runbook-templates`, `devops-engineer`, `devops-rollout-plan`, `testing-handbook-generator`

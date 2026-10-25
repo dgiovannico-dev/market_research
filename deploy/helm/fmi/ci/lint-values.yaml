@@ -1,0 +1,8 @@
+# Dummy values for `helm lint` / CI only — not for real clusters.
+secrets:
+  postgresPassword: lint-only-not-for-production
+api:
+  env:
+    API_CORS_ORIGINS: "https://fmi.local"
+frontend:
+  publicApiUrl: "https://api.fmi.local"

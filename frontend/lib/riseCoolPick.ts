@@ -32,10 +32,21 @@ function toRow(
   };
 }
 
+/** Mostra N → floor(N/2) rise slots + ceil(N/2) cool slots (strict, no cross-fill). */
+export function riseCoolSlotTargets(topN: number): {
+  riseSlots: number;
+  coolSlots: number;
+} {
+  const limit = Math.max(0, Math.floor(topN));
+  const riseSlots = Math.floor(limit / 2);
+  return { riseSlots, coolSlots: limit - riseSlots };
+}
+
 /**
  * Select up to `topN` chartable skills, balanced rise/cool.
- * Odd topN: cool gets the extra slot (floor(n/2) rise, ceil(n/2) cool),
- * then unused slots are backfilled from the other side so total ≤ topN.
+ * Odd topN: cool gets the extra slot (floor(n/2) rise, ceil(n/2) cool).
+ * Does not backfill from the other side — empty cooling stays empty so Mostra
+ * means “half each”, not “fill N bars from whichever side has data”.
  */
 export function pickRiseCoolRows(
   items: RiseCoolSourceItem[],
@@ -57,21 +68,9 @@ export function pickRiseCoolRows(
     .filter((it) => (it.growth_pct as number) <= 0)
     .sort((a, b) => (a.growth_pct as number) - (b.growth_pct as number));
 
-  const riseSlots = Math.floor(limit / 2);
-  const coolSlots = limit - riseSlots;
-
-  let risePick = rising.slice(0, riseSlots);
-  let coolPick = cooling.slice(0, coolSlots);
-
-  const used = risePick.length + coolPick.length;
-  const unused = limit - used;
-  if (unused > 0) {
-    if (risePick.length < riseSlots) {
-      coolPick = cooling.slice(0, coolSlots + unused);
-    } else if (coolPick.length < coolSlots) {
-      risePick = rising.slice(0, riseSlots + unused);
-    }
-  }
+  const { riseSlots, coolSlots } = riseCoolSlotTargets(limit);
+  const risePick = rising.slice(0, riseSlots);
+  const coolPick = cooling.slice(0, coolSlots);
 
   // Chart order: cooling (most negative at bottom of category axis first)
   // then rising reversed so strongest rise ends at top.

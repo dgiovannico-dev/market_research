@@ -1,0 +1,58 @@
+{{- if and .Values.api.enabled .Values.migrate.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "fmi.api.fullname" . }}-migrate
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    # After Secret/ConfigMap/Postgres exist (cannot be pre-install with in-chart DB).
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrate.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "fmi.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: alembic
+          image: {{ include "fmi.image" (dict "global" .Values.global "repository" .Values.api.image.repository "tag" .Values.api.image.tag) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              echo "Waiting for database / running alembic..."
+              i=0
+              until alembic upgrade head; do
+                i=$((i + 1))
+                if [ "$i" -ge 60 ]; then
+                  echo "migrate failed after retries" >&2
+                  exit 1
+                fi
+                sleep 2
+              done
+              echo "migrate OK"
+
+          envFrom:
+            - configMapRef:
+                name: {{ include "fmi.configMapName" . }}
+            - secretRef:
+                name: {{ include "fmi.secretName" . }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+{{- end }}

@@ -27,7 +27,7 @@ def evaluate_alerts() -> list[dict[str, Any]]:
 
     fired: list[dict[str, Any]] = []
     with get_container().session_scope() as db:
-        summary = kpis.dashboard_summary(db, days=30)
+        summary = kpis.dashboard_summary(db, days=30, top_n=10)
         trends = kpis.technology_trends(db, days=60, min_support=2)
         rules = db.scalars(select(AlertRule).where(AlertRule.enabled.is_(True))).all()
         if not rules:

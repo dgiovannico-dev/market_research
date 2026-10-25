@@ -158,7 +158,53 @@ export type MarketLanguages = {
   focus?: MarketLanguages;
 };
 
+export type MarketCertificationItem = {
+  certification: string;
+  slug?: string;
+  job_mentions: number;
+  evidence_kind?: string;
+};
+
+export type MarketCertifications = {
+  period_days?: number;
+  sample_size?: number;
+  items?: MarketCertificationItem[];
+  lens?: string;
+  query_ids?: number[] | null;
+  market_n?: number;
+  focus_n?: number;
+  overlap_n?: number;
+  disclaimer?: string;
+  market?: MarketCertifications;
+  focus?: MarketCertifications;
+};
+
+export type CertCountryMapItem = {
+  country_code: string;
+  jobs: number;
+};
+
+export type CertCountryRow = {
+  country_code: string;
+  jobs_with_certs: number;
+  top_certification: string | null;
+  top_mentions: number;
+  top: MarketCertificationItem[];
+};
+
+export type MarketCertificationsByCountry = {
+  period_days?: number;
+  sample_size?: number;
+  map_items?: CertCountryMapItem[];
+  unknown_jobs?: number;
+  countries?: CertCountryRow[];
+  disclaimer?: string;
+  lens?: string;
+};
+
 export type CooccurrencePayload = {
+  seed?: string | null;
+  neighbor_limit?: number | null;
   jobs_analyzed: number;
   period_days: number;
   items: Record<string, unknown>[];

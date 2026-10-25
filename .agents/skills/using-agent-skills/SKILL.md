@@ -38,6 +38,14 @@ Task arrives
     ├── CI/CD pipeline work? ──────────→ ci-cd-and-automation
     ├── Deprecating/migrating? ────────→ deprecation-and-migration
     ├── Writing docs/ADRs? ───────────→ documentation-and-adrs
+    │   ├── Co-author long docs? ─────→ doc-coauthoring
+    │   ├── Design manuals / diagrams? → design-doc-mermaid, architecture-blueprint-generator
+    │   ├── Product/app manuals? ─────→ documentation-writer, app-docs, documentation
+    │   ├── API contracts? ───────────→ openapi-spec-generation
+    │   ├── Prose quality? ───────────→ technical-writing, writing-guidelines
+    │   └── Code comments / handbooks? → code-documenter, testing-handbook-generator
+    ├── Ops runbooks / incidents? ────→ writing-runbooks, incident-runbook-templates
+    ├── DevOps procedures / rollout? ─→ devops-engineer, devops-rollout-plan
     ├── Adding logs/metrics/alerts? ───→ observability-and-instrumentation
     └── Deploying/launching? ─────────→ shipping-and-launch
 ```
@@ -188,5 +196,14 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Ship | ci-cd-and-automation | Automated quality gates on every change |
 | Ship | deprecation-and-migration | Remove old systems and migrate users safely |
 | Ship | documentation-and-adrs | Document the why, not just the what |
+| Docs | doc-coauthoring | Structured co-authoring for long-form software docs |
+| Docs | design-doc-mermaid | Design docs with Mermaid architecture diagrams |
+| Docs | architecture-blueprint-generator | System architecture blueprints |
+| Docs | documentation-writer / app-docs | User/ops manuals and app documentation |
+| Docs | technical-writing | Clear technical prose |
+| Docs | openapi-spec-generation | OpenAPI / API contract docs |
+| Ops | writing-runbooks | Operational runbooks and procedures |
+| Ops | incident-runbook-templates | Incident response runbook templates |
+| Ops | devops-engineer / devops-rollout-plan | DevOps procedures and rollout plans |
 | Ship | observability-and-instrumentation | Structured logs, RED metrics, traces, symptom-based alerts |
 | Ship | shipping-and-launch | Pre-launch checklist, monitoring, rollback plan |

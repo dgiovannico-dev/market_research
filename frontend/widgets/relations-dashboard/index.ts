@@ -1,6 +1,7 @@
 export { RelationsDashboard } from "./ui/RelationsDashboard";
 export { RelationsHeatmapsPanel } from "./ui/RelationsHeatmapsPanel";
 export { RelationsSeriesPanel } from "./ui/RelationsSeriesPanel";
+export { RelationsGraphPanel } from "./ui/RelationsGraphPanel";
 export { RelationsSkillsHeatPanel } from "./ui/RelationsSkillsHeatPanel";
 export { RelationsPlaceHeatPanel } from "./ui/RelationsPlaceHeatPanel";
 export { RelationsViewTabs } from "./ui/RelationsViewTabs";

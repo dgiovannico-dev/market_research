@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Aggregate ADEM LU skills-vacancy open-data CSV into a metrics-friendly JSON summary.
 
-Not a job collector — see docs/sources/ADEM_LU_SKILLS_OPENDATA.md.
+Not a job collector — see data/sources/catalog.json (ADEM stats, not jobs).
 
 Usage:
   python3 backend/scripts/adem_skills_summary.py --csv path/to/file.csv -o summary.json

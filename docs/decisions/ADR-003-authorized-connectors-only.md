@@ -40,11 +40,11 @@ Verification statuses (catalog): `DISCOVERED` · `UNDER_REVIEW` · `NEEDS_CREDEN
 
 - Pros: looks complete
 - Cons: false claims
-- Rejected; evidence in [../sources/VALIDATION_REPORT.md](../sources/VALIDATION_REPORT.md)
+- Rejected; evidence in catalog verification + collection runs
 
 ## Consequences
 
-- Coverage notes on Sources page and [../sources/COVERAGE_GAPS.md](../sources/COVERAGE_GAPS.md).
+- Coverage notes on Sources page and catalog `coverage_*` fields.
 - LinkedIn/Malt/Indeed/Upwork/Adzuna/etc. stay Next/Later until authorized.
 - Ingest and sources specs must stay aligned with this ADR.
 - Discovery indexes (Public APIs lists) are not proof a service is usable.

@@ -86,12 +86,17 @@ def test_dashboard_and_quality(client):
     assert client.get("/api/v1/market/countries", params={"for_map": "true"}).status_code == 200
     assert client.get("/api/v1/market/facets").status_code == 200
     assert client.get("/api/v1/market/languages").status_code == 200
+    assert client.get("/api/v1/market/certifications/top").status_code == 200
     assert client.get("/api/v1/market/skills/cooccurrence").status_code == 200
 
 
 def test_profile_and_report(client):
     assert client.get("/api/v1/profile").status_code == 200
     assert client.get("/api/v1/profile/skill-gaps").status_code == 200
+    assert (
+        client.post("/api/v1/profile/skill-gaps", json={"skills": ["Python"]}).status_code
+        == 200
+    )
     assert client.get("/api/v1/reports/weekly").status_code == 200
     assert client.post("/api/v1/alerts/evaluate").status_code == 200
 

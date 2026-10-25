@@ -21,7 +21,7 @@ Introduce a user preference `view_mode`:
 
 Also support customization of widgets, period, focus filters, nav visibility, named presets, and **`locale` (`it` | `en`)**. Persist in versioned `localStorage`; optionally sync to profile later.
 
-Presentation follows the **signal-desk** visual system (chart-forward Executive, ECharts kit, IT/EN copy)—see [SPEC-dashboard.md](../specs/SPEC-dashboard.md), [SPEC-i18n.md](../specs/SPEC-i18n.md). Modes change coaching density, not chart honesty.
+Presentation follows the **signal-desk** visual system (chart-forward Executive, ECharts kit, IT/EN copy)—see [manuals/EXPLORE.md](../manuals/EXPLORE.md). Modes change coaching density, not chart honesty.
 
 Analytics APIs remain evidence-first in both modes; mode and locale are **presentation** concerns (dashboard module).
 
@@ -47,6 +47,6 @@ Analytics APIs remain evidence-first in both modes; mode and locale are **presen
 
 ## Consequences
 
-- SPEC-dashboard and PRODUCT.md define acceptance.
-- Implementation plan: `docs/superpowers/plans/2026-10-20-dashboard-customization.md`.
+- Acceptance lives in UI behavior + [manuals/OVERVIEW.md](../manuals/OVERVIEW.md).
+- UI: dashboard prefs + [manuals/OVERVIEW.md](../manuals/OVERVIEW.md).
 - Profile/report recommendation UIs respect `view_mode` when embedding on Executive.

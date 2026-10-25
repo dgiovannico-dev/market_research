@@ -12,6 +12,7 @@ export { RatesBox } from "./RatesBox";
 export { RiseCoolChart } from "./RiseCoolChart";
 export { Sparkline } from "./Sparkline";
 export type { SparkPoint } from "./Sparkline";
+export { TechCooccurGraph } from "./TechCooccurGraph";
 export { chartAnimationMs, chartTheme } from "./chartTheme";
 export {
   CHART_TOP_N_OPTIONS,
@@ -31,7 +32,9 @@ export {
   RatesBoxLazy,
   RiseCoolChartLazy,
   SparklineLazy,
+  TechCooccurGraphLazy,
 } from "./lazy";
 export type { RatesBoxItem } from "./RatesBox";
 export type { RiseCoolItem } from "./RiseCoolChart";
 export type { MultiSeriesLine } from "./MultiSeriesChart";
+export type { TechCooccurGraphProps } from "./TechCooccurGraph";

@@ -45,6 +45,7 @@ export const ANALYTICS_COUNTRY_PATHS = new Set([
   "/rates",
   "/countries",
   "/languages",
+  "/certifications",
   "/quality",
   "/assistant",
   "/focus",

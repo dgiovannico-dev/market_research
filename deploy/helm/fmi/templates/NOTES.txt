@@ -1,0 +1,31 @@
+FMI installed release={{ .Release.Name }} namespace={{ .Release.Namespace }}
+
+Components:
+  - API:       {{ include "fmi.api.fullname" . }}:{{ .Values.api.service.port }}
+  - Frontend:  {{ include "fmi.frontend.fullname" . }}:{{ .Values.frontend.service.port }}
+{{- if .Values.postgres.enabled }}
+  - Postgres:  {{ include "fmi.postgres.fullname" . }}:5432 (official postgres:16-alpine)
+{{- end }}
+{{- if .Values.valkey.enabled }}
+  - Valkey:    {{ include "fmi.valkey.fullname" . }}:6379 (BSD Redis-compatible; REDIS_URL)
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+Ingress hosts:
+  Frontend: http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.hosts.frontend }}
+  API:      http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.hosts.api }}
+
+Ensure API_CORS_ORIGINS includes the frontend origin and that the frontend
+image was built with NEXT_PUBLIC_API_URL={{ .Values.frontend.publicApiUrl }}
+{{- end }}
+
+Smoke:
+  kubectl -n {{ .Release.Namespace }} wait --for=condition=ready pod -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=api --timeout=180s
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "fmi.api.fullname" . }} 8000:{{ .Values.api.service.port }}
+  curl -sf http://127.0.0.1:8000/readyz
+
+Scheduler CronJob (ENABLE_SCHEDULER=false on API replicas):
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "fmi.api.fullname" . }}-scheduler manual-tick-$(date +%s)
+
+Docs: docs/ops/HELM-k3s.md

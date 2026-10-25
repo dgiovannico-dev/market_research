@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { CHART_TOP_N_OPTIONS } from "./chartTopN";
 import { MetricLegend } from "@/shared/ui/MetricLegend";
 import { ScrollLoadFooter } from "@/shared/ui/ScrollLoadFooter";
@@ -32,6 +32,8 @@ export type ChartFrameProps = {
   thin?: boolean;
   emptyMessage?: string;
   thinMessage?: string;
+  /** Non-thin advisory banner (e.g. rise/cool side imbalance). */
+  note?: string | null;
   table?: ChartTable | null;
   /** Plain-language glossary under the header (chart jargon). */
   legendItems?: ChartLegendItem[];
@@ -45,6 +47,8 @@ export type ChartFrameProps = {
   topN?: number;
   topNOptions?: readonly number[];
   onTopNChange?: (n: number) => void;
+  /** Override default charts.topNAria (e.g. rise/cool half-half wording). */
+  topNAriaLabel?: string;
   /**
    * Axis captions rendered outside the plot (HTML). Prefer these over
    * ECharts axis `name` — that name overlaps tick labels with containLabel.
@@ -75,6 +79,7 @@ export function ChartFrame({
   thin = false,
   emptyMessage,
   thinMessage,
+  note = null,
   table = null,
   legendItems,
   guideRepresents,
@@ -84,10 +89,13 @@ export function ChartFrame({
   topN,
   topNOptions = CHART_TOP_N_OPTIONS,
   onTopNChange,
+  topNAriaLabel,
   xAxisLabel,
   yAxisLabel,
 }: ChartFrameProps) {
   const t = useTranslations("charts");
+  const tCommon = useTranslations("common");
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
   const [showTable, setShowTable] = useState(false);
   const showTopN = typeof topN === "number" && typeof onTopNChange === "function";
   const showChart = !empty && !showTable;
@@ -142,7 +150,7 @@ export function ChartFrame({
                 : sampleSize != null
                   ? `n=${sampleSize}`
                   : "—"}
-            {thin && !empty ? " · thin" : null}
+            {thin && !empty ? ` · ${t("thinBadge")}` : null}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -152,7 +160,7 @@ export function ChartFrame({
               <select
                 className="rounded border border-[var(--line)] bg-transparent px-1.5 py-1 text-[var(--ink)]"
                 value={topN}
-                aria-label={t("topNAria")}
+                aria-label={topNAriaLabel ?? t("topNAria")}
                 onChange={(e) => onTopNChange?.(Number(e.target.value))}
               >
                 {topNOptions.map((n) => (
@@ -218,6 +226,12 @@ export function ChartFrame({
         </p>
       ) : null}
 
+      {!empty && note ? (
+        <p className="border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--cool)_12%,transparent)] px-4 py-2 text-xs text-[var(--ink)]">
+          {note}
+        </p>
+      ) : null}
+
       {showChart ? (
         <div className="px-2 pb-3 pt-1">
           <div className="flex items-stretch gap-1">
@@ -258,9 +272,12 @@ export function ChartFrame({
           <div className="mb-2 px-1">
             <TableSearch value={tableQuery} onChange={setTableQuery} />
           </div>
-          <div className="overflow-x-auto">
+          <div
+            ref={tableScrollRef}
+            className="max-h-96 overflow-auto overscroll-contain"
+          >
             <table className="min-w-full text-sm">
-              <thead className="text-xs uppercase opacity-60">
+              <thead className="sticky top-0 z-10 bg-[var(--card)] text-xs uppercase shadow-[0_1px_0_var(--line)]">
                 <tr>
                   {table.columns.map((col, i) => (
                     <SortableTh
@@ -271,7 +288,7 @@ export function ChartFrame({
                       order={order}
                       onSort={toggle}
                       ariaLabel={tCommon("sortBy", { column: col })}
-                      className="px-2 py-1.5 text-left font-medium"
+                      className="bg-[var(--card)] px-2 py-1.5 text-left font-medium text-[var(--muted)]"
                     />
                   ))}
                 </tr>
@@ -305,15 +322,19 @@ export function ChartFrame({
                 )}
               </tbody>
             </table>
+            {sorted.length > 0 ? (
+              <ScrollLoadFooter
+                hasMore={page.hasMore}
+                isExpanded={page.isExpanded}
+                onLoadMore={page.loadMore}
+                onExpandAll={page.expandAll}
+                onCollapse={page.collapse}
+                shown={page.shown}
+                total={page.total}
+                scrollRootRef={tableScrollRef}
+              />
+            ) : null}
           </div>
-          {sorted.length > 0 ? (
-            <ScrollLoadFooter
-              hasMore={page.hasMore}
-              onLoadMore={page.loadMore}
-              shown={page.shown}
-              total={page.total}
-            />
-          ) : null}
         </div>
       ) : null}
     </section>

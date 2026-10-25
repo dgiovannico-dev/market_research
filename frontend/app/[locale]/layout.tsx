@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, Source_Sans_3, Syne } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
+import { AuthProvider } from "@/features/auth";
 import { DashboardPrefsProvider } from "@/features/dashboard-prefs";
 import { CountryFilterBoundary } from "@/features/country-filter";
 import { AppChrome } from "@/widgets/app-chrome";
@@ -61,11 +62,13 @@ export default async function LocaleLayout({ children, params }: Props) {
     >
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <DashboardPrefsProvider>
-            <CountryFilterBoundary>
-              <AppChrome>{children}</AppChrome>
-            </CountryFilterBoundary>
-          </DashboardPrefsProvider>
+          <AuthProvider>
+            <DashboardPrefsProvider>
+              <CountryFilterBoundary>
+                <AppChrome>{children}</AppChrome>
+              </CountryFilterBoundary>
+            </DashboardPrefsProvider>
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

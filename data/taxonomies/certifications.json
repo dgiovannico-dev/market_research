@@ -1,0 +1,1762 @@
+[
+  {
+    "slug": "alibaba-aca",
+    "display_name": "Alibaba Cloud ACA",
+    "aliases": [
+      "ACA Alibaba",
+      "Alibaba Cloud Associate"
+    ]
+  },
+  {
+    "slug": "alibaba-acp",
+    "display_name": "Alibaba Cloud ACP",
+    "aliases": [
+      "ACP Alibaba",
+      "Alibaba Cloud Professional"
+    ]
+  },
+  {
+    "slug": "android-associate",
+    "display_name": "Associate Android Developer",
+    "aliases": [
+      "Google Associate Android Developer",
+      "Android Developer Certification"
+    ]
+  },
+  {
+    "slug": "ansible-automation",
+    "display_name": "Red Hat Certified Specialist in Ansible Automation",
+    "aliases": [
+      "EX407",
+      "Ansible Specialist",
+      "RH Ansible"
+    ]
+  },
+  {
+    "slug": "apple-swift",
+    "display_name": "App Development with Swift Certified User",
+    "aliases": [
+      "Swift Certified User",
+      "Apple Swift certification"
+    ]
+  },
+  {
+    "slug": "atlassian-acp",
+    "display_name": "Atlassian Certified Professional",
+    "aliases": [
+      "ACP-120",
+      "Jira Administrator Certification"
+    ]
+  },
+  {
+    "slug": "aws-advanced-networking",
+    "display_name": "AWS Certified Advanced Networking – Specialty",
+    "aliases": [
+      "AWS Advanced Networking",
+      "ANS-C01",
+      "Advanced Networking Specialty"
+    ]
+  },
+  {
+    "slug": "aws-ai-practitioner",
+    "display_name": "AWS AI Practitioner",
+    "aliases": [
+      "AIF-C01",
+      "AWS AI Practitioner"
+    ]
+  },
+  {
+    "slug": "aws-cloud-practitioner",
+    "display_name": "AWS Cloud Practitioner",
+    "aliases": [
+      "CLF-C02",
+      "AWS Certified Cloud Practitioner",
+      "Cloud Practitioner"
+    ]
+  },
+  {
+    "slug": "aws-data-engineer",
+    "display_name": "AWS Data Engineer Associate",
+    "aliases": [
+      "DEA-C01",
+      "AWS Data Engineer"
+    ]
+  },
+  {
+    "slug": "aws-database-specialty",
+    "display_name": "AWS Database Specialty",
+    "aliases": [
+      "DBS-C01",
+      "AWS Database Specialty"
+    ]
+  },
+  {
+    "slug": "aws-developer",
+    "display_name": "AWS Developer Associate",
+    "aliases": [
+      "DVA-C02",
+      "AWS Developer",
+      "Certified Developer – Associate",
+      "AWS Certified Developer"
+    ]
+  },
+  {
+    "slug": "aws-devops-pro",
+    "display_name": "AWS DevOps Engineer Professional",
+    "aliases": [
+      "DOP-C02",
+      "AWS DevOps Professional",
+      "DevOps Engineer – Professional"
+    ]
+  },
+  {
+    "slug": "aws-machine-learning",
+    "display_name": "AWS Machine Learning Specialty",
+    "aliases": [
+      "MLS-C01",
+      "AWS ML Specialty",
+      "AWS Certified Machine Learning"
+    ]
+  },
+  {
+    "slug": "aws-ml-engineer-associate",
+    "display_name": "AWS Machine Learning Engineer Associate",
+    "aliases": [
+      "MLA-C01",
+      "AWS ML Engineer Associate"
+    ]
+  },
+  {
+    "slug": "aws-networking-specialty",
+    "display_name": "AWS Advanced Networking Specialty",
+    "aliases": [
+      "ANS-C01",
+      "AWS Networking Specialty"
+    ]
+  },
+  {
+    "slug": "aws-saa",
+    "display_name": "AWS Solutions Architect Associate",
+    "aliases": [
+      "AWS SAA",
+      "SAA-C03",
+      "SAA-C02",
+      "AWS Certified Solutions Architect – Associate",
+      "Solutions Architect Associate"
+    ]
+  },
+  {
+    "slug": "aws-saas-specialty",
+    "display_name": "AWS SaaS Specialty",
+    "aliases": [
+      "PAS-C01",
+      "AWS SaaS Specialty"
+    ]
+  },
+  {
+    "slug": "aws-sap",
+    "display_name": "AWS Solutions Architect Professional",
+    "aliases": [
+      "SAP-C02",
+      "AWS Solutions Architect Professional",
+      "Solutions Architect – Professional"
+    ]
+  },
+  {
+    "slug": "aws-security-specialty",
+    "display_name": "AWS Security Specialty",
+    "aliases": [
+      "SCS-C02",
+      "AWS Security Specialty",
+      "AWS Certified Security"
+    ]
+  },
+  {
+    "slug": "aws-sysops",
+    "display_name": "AWS SysOps Administrator Associate",
+    "aliases": [
+      "SOA-C02",
+      "SysOps Administrator",
+      "AWS SysOps"
+    ]
+  },
+  {
+    "slug": "azure-ai102",
+    "display_name": "Azure AI Engineer Associate",
+    "aliases": [
+      "AI-102",
+      "Azure AI Engineer"
+    ]
+  },
+  {
+    "slug": "azure-ai900",
+    "display_name": "Azure AI Fundamentals",
+    "aliases": [
+      "AI-900",
+      "AI-900 Microsoft",
+      "Microsoft AI-900"
+    ]
+  },
+  {
+    "slug": "azure-az104",
+    "display_name": "Azure Administrator Associate",
+    "aliases": [
+      "AZ-104",
+      "Azure Administrator",
+      "Microsoft Azure Administrator"
+    ]
+  },
+  {
+    "slug": "azure-az204",
+    "display_name": "Azure Developer Associate",
+    "aliases": [
+      "AZ-204",
+      "Azure Developer",
+      "Microsoft Azure Developer",
+      "AZ-204 .NET",
+      "Azure .NET Developer"
+    ]
+  },
+  {
+    "slug": "azure-az305",
+    "display_name": "Azure Solutions Architect Expert",
+    "aliases": [
+      "AZ-305",
+      "Azure Solutions Architect",
+      "Microsoft Azure Architect"
+    ]
+  },
+  {
+    "slug": "azure-az400",
+    "display_name": "Azure DevOps Engineer Expert",
+    "aliases": [
+      "AZ-400",
+      "Azure DevOps Engineer"
+    ]
+  },
+  {
+    "slug": "azure-az500",
+    "display_name": "Azure Security Engineer Associate",
+    "aliases": [
+      "AZ-500",
+      "Azure Security Engineer"
+    ]
+  },
+  {
+    "slug": "azure-az700",
+    "display_name": "Azure Network Engineer Associate",
+    "aliases": [
+      "AZ-700",
+      "Azure Network Engineer"
+    ]
+  },
+  {
+    "slug": "azure-az900",
+    "display_name": "Azure Fundamentals",
+    "aliases": [
+      "AZ-900",
+      "Microsoft Azure Fundamentals"
+    ]
+  },
+  {
+    "slug": "azure-dp100",
+    "display_name": "Microsoft Azure Data Scientist Associate",
+    "aliases": [
+      "DP-100",
+      "Azure Data Scientist"
+    ]
+  },
+  {
+    "slug": "azure-dp203",
+    "display_name": "Azure Data Engineer Associate",
+    "aliases": [
+      "DP-203",
+      "Azure Data Engineer"
+    ]
+  },
+  {
+    "slug": "azure-dp600",
+    "display_name": "Fabric Analytics Engineer Associate",
+    "aliases": [
+      "DP-600",
+      "Microsoft Fabric Analytics Engineer"
+    ]
+  },
+  {
+    "slug": "azure-dp700",
+    "display_name": "Fabric Data Engineer Associate",
+    "aliases": [
+      "DP-700",
+      "Microsoft Fabric Data Engineer"
+    ]
+  },
+  {
+    "slug": "azure-dp900",
+    "display_name": "Azure Data Fundamentals",
+    "aliases": [
+      "DP-900"
+    ]
+  },
+  {
+    "slug": "azure-ms900",
+    "display_name": "Microsoft 365 Fundamentals",
+    "aliases": [
+      "MS-900",
+      "M365 Fundamentals"
+    ]
+  },
+  {
+    "slug": "azure-pl200",
+    "display_name": "Power Platform Functional Consultant",
+    "aliases": [
+      "PL-200"
+    ]
+  },
+  {
+    "slug": "azure-pl400",
+    "display_name": "Power Platform Developer Associate",
+    "aliases": [
+      "PL-400"
+    ]
+  },
+  {
+    "slug": "azure-pl600",
+    "display_name": "Microsoft Power Platform Solution Architect Expert",
+    "aliases": [
+      "PL-600"
+    ]
+  },
+  {
+    "slug": "azure-pl900",
+    "display_name": "Power Platform Fundamentals",
+    "aliases": [
+      "PL-900"
+    ]
+  },
+  {
+    "slug": "azure-sc200",
+    "display_name": "Microsoft Security Operations Analyst",
+    "aliases": [
+      "SC-200"
+    ]
+  },
+  {
+    "slug": "azure-sc300",
+    "display_name": "Microsoft Identity and Access Administrator",
+    "aliases": [
+      "SC-300",
+      "SC-300 Identity",
+      "Microsoft Identity Administrator"
+    ]
+  },
+  {
+    "slug": "azure-sc900",
+    "display_name": "Microsoft Security, Compliance, and Identity Fundamentals",
+    "aliases": [
+      "SC-900"
+    ]
+  },
+  {
+    "slug": "boomi-associate",
+    "display_name": "Boomi Professional Developer",
+    "aliases": [
+      "Boomi Certification"
+    ]
+  },
+  {
+    "slug": "capa",
+    "display_name": "Certified Argo Project Associate",
+    "aliases": [
+      "CAPA",
+      "ArgoCD certification"
+    ]
+  },
+  {
+    "slug": "capm",
+    "display_name": "Certified Associate in Project Management",
+    "aliases": [
+      "CAPM"
+    ]
+  },
+  {
+    "slug": "ccna",
+    "display_name": "Cisco Certified Network Associate",
+    "aliases": [
+      "CCNA",
+      "Cisco CCNA",
+      "200-301"
+    ]
+  },
+  {
+    "slug": "ccnp-enterprise",
+    "display_name": "Cisco Certified Network Professional Enterprise",
+    "aliases": [
+      "CCNP",
+      "CCNP Enterprise"
+    ]
+  },
+  {
+    "slug": "ccnp-security",
+    "display_name": "Cisco CCNP Security",
+    "aliases": [
+      "CCNP Security"
+    ]
+  },
+  {
+    "slug": "ccsp",
+    "display_name": "Certified Cloud Security Professional",
+    "aliases": [
+      "CCSP",
+      "ISC2 CCSP"
+    ]
+  },
+  {
+    "slug": "ceh",
+    "display_name": "Certified Ethical Hacker",
+    "aliases": [
+      "CEH",
+      "CEH v12",
+      "EC-Council CEH"
+    ]
+  },
+  {
+    "slug": "cilium-cca",
+    "display_name": "Cilium Certified Associate",
+    "aliases": [
+      "CCA Cilium"
+    ]
+  },
+  {
+    "slug": "cisa",
+    "display_name": "CISA",
+    "aliases": [
+      "CISA",
+      "Certified Information Systems Auditor"
+    ]
+  },
+  {
+    "slug": "cisco-cyberops-associate",
+    "display_name": "Cisco CyberOps Associate",
+    "aliases": [
+      "CyberOps Associate",
+      "200-201",
+      "CBROPS"
+    ]
+  },
+  {
+    "slug": "cisco-devnet-associate",
+    "display_name": "Cisco DevNet Associate",
+    "aliases": [
+      "DevNet Associate",
+      "200-901",
+      "DEVASC"
+    ]
+  },
+  {
+    "slug": "cism",
+    "display_name": "CISM",
+    "aliases": [
+      "CISM",
+      "Certified Information Security Manager"
+    ]
+  },
+  {
+    "slug": "cissp",
+    "display_name": "CISSP",
+    "aliases": [
+      "CISSP",
+      "Certified Information Systems Security Professional"
+    ]
+  },
+  {
+    "slug": "cissp-issap",
+    "display_name": "CISSP-ISSAP",
+    "aliases": [
+      "ISSAP",
+      "CISSP ISSAP"
+    ]
+  },
+  {
+    "slug": "cka",
+    "display_name": "Certified Kubernetes Administrator",
+    "aliases": [
+      "CKA",
+      "Kubernetes Administrator"
+    ]
+  },
+  {
+    "slug": "ckad",
+    "display_name": "Certified Kubernetes Application Developer",
+    "aliases": [
+      "CKAD",
+      "Kubernetes Application Developer"
+    ]
+  },
+  {
+    "slug": "cks",
+    "display_name": "Certified Kubernetes Security Specialist",
+    "aliases": [
+      "CKS",
+      "Kubernetes Security Specialist"
+    ]
+  },
+  {
+    "slug": "cloudera-cde",
+    "display_name": "Cloudera Data Engineer",
+    "aliases": [
+      "CCA175",
+      "Cloudera Spark and Hadoop Developer"
+    ]
+  },
+  {
+    "slug": "comptia-a-plus",
+    "display_name": "CompTIA A+",
+    "aliases": [
+      "A+",
+      "CompTIA A+",
+      "220-1101"
+    ]
+  },
+  {
+    "slug": "comptia-casp",
+    "display_name": "CompTIA SecurityX (CASP+)",
+    "aliases": [
+      "CASP+",
+      "CompTIA CASP+",
+      "SecurityX"
+    ]
+  },
+  {
+    "slug": "comptia-cloud-plus",
+    "display_name": "CompTIA Cloud+",
+    "aliases": [
+      "Cloud+",
+      "CompTIA Cloud+",
+      "CV0-003"
+    ]
+  },
+  {
+    "slug": "comptia-cysa",
+    "display_name": "CompTIA CySA+",
+    "aliases": [
+      "CySA+",
+      "CompTIA CySA+"
+    ]
+  },
+  {
+    "slug": "comptia-data-plus",
+    "display_name": "CompTIA Data+",
+    "aliases": [
+      "Data+",
+      "CompTIA Data+",
+      "DA0-001"
+    ]
+  },
+  {
+    "slug": "comptia-linux",
+    "display_name": "CompTIA Linux+",
+    "aliases": [
+      "Linux+",
+      "CompTIA Linux+"
+    ]
+  },
+  {
+    "slug": "comptia-network",
+    "display_name": "CompTIA Network+",
+    "aliases": [
+      "Network+",
+      "CompTIA Network+",
+      "N10-009"
+    ]
+  },
+  {
+    "slug": "comptia-pentest",
+    "display_name": "CompTIA PenTest+",
+    "aliases": [
+      "PenTest+",
+      "CompTIA PenTest+"
+    ]
+  },
+  {
+    "slug": "comptia-security",
+    "display_name": "CompTIA Security+",
+    "aliases": [
+      "Security+",
+      "CompTIA Security+",
+      "Sec+",
+      "SY0-701"
+    ]
+  },
+  {
+    "slug": "comptia-server-plus",
+    "display_name": "CompTIA Server+",
+    "aliases": [
+      "Server+",
+      "CompTIA Server+",
+      "SK0-005"
+    ]
+  },
+  {
+    "slug": "confluent-admin",
+    "display_name": "Confluent Certified Administrator for Apache Kafka",
+    "aliases": [
+      "Confluent Administrator",
+      "CCAAK"
+    ]
+  },
+  {
+    "slug": "confluent-developer",
+    "display_name": "Confluent Certified Developer for Apache Kafka",
+    "aliases": [
+      "Confluent Developer",
+      "CCDAK"
+    ]
+  },
+  {
+    "slug": "confluent-kafka-operator",
+    "display_name": "Confluent Certified Operator for Apache Kafka",
+    "aliases": [
+      "Confluent Kafka Operator"
+    ]
+  },
+  {
+    "slug": "consul-associate",
+    "display_name": "HashiCorp Consul Associate",
+    "aliases": [
+      "Consul Associate"
+    ]
+  },
+  {
+    "slug": "crisc",
+    "display_name": "CRISC",
+    "aliases": [
+      "CRISC"
+    ]
+  },
+  {
+    "slug": "csm",
+    "display_name": "Certified ScrumMaster",
+    "aliases": [
+      "CSM",
+      "Scrum Alliance CSM"
+    ]
+  },
+  {
+    "slug": "cyberark-defender",
+    "display_name": "CyberArk Defender",
+    "aliases": [
+      "CyberArk Certified Defender"
+    ]
+  },
+  {
+    "slug": "databricks-da-associate",
+    "display_name": "Databricks Certified Data Analyst Associate",
+    "aliases": [
+      "Databricks Data Analyst Associate"
+    ]
+  },
+  {
+    "slug": "databricks-dea",
+    "display_name": "Databricks Data Engineer Associate",
+    "aliases": [
+      "Databricks DEA",
+      "Databricks Certified Data Engineer Associate"
+    ]
+  },
+  {
+    "slug": "databricks-dea-pro",
+    "display_name": "Databricks Data Engineer Professional",
+    "aliases": [
+      "Databricks Data Engineer Professional"
+    ]
+  },
+  {
+    "slug": "databricks-genai",
+    "display_name": "Databricks Generative AI Engineer Associate",
+    "aliases": [
+      "Databricks GenAI"
+    ]
+  },
+  {
+    "slug": "databricks-lakehouse-fundamentals",
+    "display_name": "Databricks Lakehouse Fundamentals",
+    "aliases": [
+      "Lakehouse Fundamentals"
+    ]
+  },
+  {
+    "slug": "databricks-ml",
+    "display_name": "Databricks Machine Learning Associate",
+    "aliases": [
+      "Databricks ML Associate"
+    ]
+  },
+  {
+    "slug": "databricks-ml-professional",
+    "display_name": "Databricks Certified Machine Learning Professional",
+    "aliases": [
+      "Databricks ML Professional"
+    ]
+  },
+  {
+    "slug": "dbt-analytics-engineer",
+    "display_name": "dbt Analytics Engineering Certification",
+    "aliases": [
+      "dbt Certification",
+      "Analytics Engineering Certification"
+    ]
+  },
+  {
+    "slug": "elastic-certified-analyst",
+    "display_name": "Elastic Certified Analyst",
+    "aliases": [
+      "Elastic Analyst",
+      "ECA"
+    ]
+  },
+  {
+    "slug": "elastic-certified-security",
+    "display_name": "Elastic Certified Security Analyst",
+    "aliases": [
+      "Elastic Security Analyst",
+      "ECSA"
+    ]
+  },
+  {
+    "slug": "elastic-engineer",
+    "display_name": "Elastic Engineer",
+    "aliases": [
+      "Elastic Certified Engineer"
+    ]
+  },
+  {
+    "slug": "elastic-observability",
+    "display_name": "Elastic Observability Engineer",
+    "aliases": [
+      "Elastic Certified Observability Engineer"
+    ]
+  },
+  {
+    "slug": "finops-certified-practitioner",
+    "display_name": "FinOps Certified Practitioner",
+    "aliases": [
+      "FinOps Practitioner",
+      "FOCP"
+    ]
+  },
+  {
+    "slug": "gcp-ace",
+    "display_name": "Google Cloud Associate Cloud Engineer",
+    "aliases": [
+      "GCP ACE",
+      "Associate Cloud Engineer",
+      "Google Cloud Engineer"
+    ]
+  },
+  {
+    "slug": "gcp-cloud-digital-leader",
+    "display_name": "Google Cloud Digital Leader",
+    "aliases": [
+      "Cloud Digital Leader",
+      "Google Cloud Digital Leader"
+    ]
+  },
+  {
+    "slug": "gcp-database",
+    "display_name": "Google Cloud Professional Cloud Database Engineer",
+    "aliases": [
+      "Professional Cloud Database Engineer"
+    ]
+  },
+  {
+    "slug": "gcp-devops",
+    "display_name": "Google Cloud Professional Cloud DevOps Engineer",
+    "aliases": [
+      "Professional Cloud DevOps Engineer",
+      "GCP DevOps"
+    ]
+  },
+  {
+    "slug": "gcp-ml-engineer",
+    "display_name": "Google Cloud Professional Machine Learning Engineer",
+    "aliases": [
+      "Professional ML Engineer",
+      "GCP ML Engineer"
+    ]
+  },
+  {
+    "slug": "gcp-pca",
+    "display_name": "Google Cloud Professional Cloud Architect",
+    "aliases": [
+      "GCP PCA",
+      "Professional Cloud Architect"
+    ]
+  },
+  {
+    "slug": "gcp-pcd",
+    "display_name": "Google Professional Cloud Developer",
+    "aliases": [
+      "GCP PCD",
+      "Professional Cloud Developer",
+      "PCD"
+    ]
+  },
+  {
+    "slug": "gcp-pcne",
+    "display_name": "Google Cloud Professional Cloud Network Engineer",
+    "aliases": [
+      "PCNE",
+      "Professional Cloud Network Engineer"
+    ]
+  },
+  {
+    "slug": "gcp-pde",
+    "display_name": "Google Cloud Professional Data Engineer",
+    "aliases": [
+      "GCP PDE",
+      "Professional Data Engineer"
+    ]
+  },
+  {
+    "slug": "gcp-security",
+    "display_name": "Google Cloud Professional Cloud Security Engineer",
+    "aliases": [
+      "Professional Cloud Security Engineer",
+      "GCP Security Engineer"
+    ]
+  },
+  {
+    "slug": "giac-gcia",
+    "display_name": "GIAC Certified Intrusion Analyst",
+    "aliases": [
+      "GCIA"
+    ]
+  },
+  {
+    "slug": "giac-gcih",
+    "display_name": "GIAC Certified Incident Handler",
+    "aliases": [
+      "GCIH"
+    ]
+  },
+  {
+    "slug": "giac-gpen",
+    "display_name": "GIAC Penetration Tester",
+    "aliases": [
+      "GPEN"
+    ]
+  },
+  {
+    "slug": "giac-gsec",
+    "display_name": "GIAC Security Essentials",
+    "aliases": [
+      "GSEC"
+    ]
+  },
+  {
+    "slug": "giac-gwapt",
+    "display_name": "GIAC Web Application Penetration Tester",
+    "aliases": [
+      "GWAPT"
+    ]
+  },
+  {
+    "slug": "github-actions",
+    "display_name": "GitHub Actions Certificate",
+    "aliases": [
+      "GitHub Actions"
+    ]
+  },
+  {
+    "slug": "github-admin",
+    "display_name": "GitHub Administration Certificate",
+    "aliases": [
+      "GitHub Administration"
+    ]
+  },
+  {
+    "slug": "github-advanced-security",
+    "display_name": "GitHub Advanced Security",
+    "aliases": [
+      "GHAS certification",
+      "GitHub Advanced Security cert"
+    ]
+  },
+  {
+    "slug": "github-foundations",
+    "display_name": "GitHub Foundations",
+    "aliases": [
+      "GitHub Foundations Certificate"
+    ]
+  },
+  {
+    "slug": "gitlab-certified-associate",
+    "display_name": "GitLab Certified Associate",
+    "aliases": [
+      "GitLab Associate"
+    ]
+  },
+  {
+    "slug": "gitlab-ci",
+    "display_name": "GitLab CI/CD Certified Associate",
+    "aliases": [
+      "GitLab Certified Associate",
+      "GitLab CI certification"
+    ]
+  },
+  {
+    "slug": "gitlab-cicd-specialist",
+    "display_name": "GitLab Certified CI/CD Specialist",
+    "aliases": [
+      "GitLab CI/CD Specialist"
+    ]
+  },
+  {
+    "slug": "gitlab-devops-professional",
+    "display_name": "GitLab Certified DevOps Professional",
+    "aliases": [
+      "GitLab DevOps Professional"
+    ]
+  },
+  {
+    "slug": "google-data-analytics",
+    "display_name": "Google Data Analytics Certificate",
+    "aliases": [
+      "Google Data Analytics"
+    ]
+  },
+  {
+    "slug": "google-project-management",
+    "display_name": "Google Project Management Certificate",
+    "aliases": [
+      "Google PM Certificate"
+    ]
+  },
+  {
+    "slug": "google-ux-design",
+    "display_name": "Google UX Design Certificate",
+    "aliases": [
+      "Google UX Design"
+    ]
+  },
+  {
+    "slug": "grafana-lgtm",
+    "display_name": "Grafana LGTM Stack Associate",
+    "aliases": [
+      "Grafana Certified Associate"
+    ]
+  },
+  {
+    "slug": "hashicorp-terraform-pro",
+    "display_name": "HashiCorp Terraform Professional",
+    "aliases": [
+      "Terraform Professional"
+    ]
+  },
+  {
+    "slug": "ibm-cloud-advocate",
+    "display_name": "IBM Cloud Advocate",
+    "aliases": [
+      "IBM Cloud Advocate v2"
+    ]
+  },
+  {
+    "slug": "ibm-data-science",
+    "display_name": "IBM Data Science Professional Certificate",
+    "aliases": [
+      "IBM Data Science"
+    ]
+  },
+  {
+    "slug": "isc2-cc",
+    "display_name": "ISC2 Certified in Cybersecurity",
+    "aliases": [
+      "CC",
+      "Certified in Cybersecurity",
+      "ISC2 CC"
+    ]
+  },
+  {
+    "slug": "istio-certified",
+    "display_name": "Istio Certified Associate",
+    "aliases": [
+      "ICA Istio"
+    ]
+  },
+  {
+    "slug": "istqb-advanced-ta",
+    "display_name": "ISTQB Advanced Test Analyst",
+    "aliases": [
+      "CTAL-TA",
+      "ISTQB Test Analyst"
+    ]
+  },
+  {
+    "slug": "istqb-advanced-tm",
+    "display_name": "ISTQB Advanced Test Manager",
+    "aliases": [
+      "CTAL-TM",
+      "ISTQB Test Manager"
+    ]
+  },
+  {
+    "slug": "istqb-agile",
+    "display_name": "ISTQB Agile Tester",
+    "aliases": [
+      "CTFL-AT",
+      "ISTQB Agile"
+    ]
+  },
+  {
+    "slug": "istqb-automation",
+    "display_name": "ISTQB Test Automation Engineer",
+    "aliases": [
+      "CTAL-TAE",
+      "ISTQB Automation"
+    ]
+  },
+  {
+    "slug": "istqb-foundation",
+    "display_name": "ISTQB Foundation",
+    "aliases": [
+      "ISTQB",
+      "ISTQB Foundation Level",
+      "CTFL",
+      "ISTQB CTFL"
+    ]
+  },
+  {
+    "slug": "itil4-cds",
+    "display_name": "ITIL 4 Create Deliver and Support",
+    "aliases": [
+      "ITIL CDS"
+    ]
+  },
+  {
+    "slug": "itil4-foundation",
+    "display_name": "ITIL 4 Foundation",
+    "aliases": [
+      "ITIL 4",
+      "ITIL Foundation",
+      "ITIL v4"
+    ]
+  },
+  {
+    "slug": "jncia-junos",
+    "display_name": "Juniper JNCIA-Junos",
+    "aliases": [
+      "JNCIA",
+      "JNCIA-Junos"
+    ]
+  },
+  {
+    "slug": "js-openjs-nodejs",
+    "display_name": "OpenJS Node.js Application Developer",
+    "aliases": [
+      "JSNAD",
+      "Node.js Application Developer"
+    ]
+  },
+  {
+    "slug": "js-openjs-nodejs-services",
+    "display_name": "OpenJS Node.js Services Developer",
+    "aliases": [
+      "JSNSD"
+    ]
+  },
+  {
+    "slug": "kcna",
+    "display_name": "Kubernetes and Cloud Native Associate",
+    "aliases": [
+      "KCNA"
+    ]
+  },
+  {
+    "slug": "kcsa",
+    "display_name": "Kubernetes and Cloud Native Security Associate",
+    "aliases": [
+      "KCSA"
+    ]
+  },
+  {
+    "slug": "kotlin-certified",
+    "display_name": "JetBrains Certified Kotlin Developer",
+    "aliases": [
+      "Kotlin Certification",
+      "JetBrains Kotlin"
+    ]
+  },
+  {
+    "slug": "lfce",
+    "display_name": "Linux Foundation Certified Engineer",
+    "aliases": [
+      "LFCE"
+    ]
+  },
+  {
+    "slug": "lfcs",
+    "display_name": "Linux Foundation Certified System Administrator",
+    "aliases": [
+      "LFCS"
+    ]
+  },
+  {
+    "slug": "lpi-linux-essentials",
+    "display_name": "Linux Professional Institute Linux Essentials",
+    "aliases": [
+      "Linux Essentials",
+      "LPI Linux Essentials",
+      "010-160"
+    ]
+  },
+  {
+    "slug": "lpic-1",
+    "display_name": "LPIC-1 Linux Administrator",
+    "aliases": [
+      "LPIC-1",
+      "LPIC 1"
+    ]
+  },
+  {
+    "slug": "lpic-2",
+    "display_name": "LPIC-2 Linux Engineer",
+    "aliases": [
+      "LPIC-2"
+    ]
+  },
+  {
+    "slug": "meta-react-native",
+    "display_name": "Meta React Native Specialization Certificate",
+    "aliases": [
+      "Meta React Native"
+    ]
+  },
+  {
+    "slug": "mongodb-dba",
+    "display_name": "MongoDB Associate DBA",
+    "aliases": [
+      "MongoDB DBA Certification"
+    ]
+  },
+  {
+    "slug": "mongodb-developer",
+    "display_name": "MongoDB Associate Developer",
+    "aliases": [
+      "MongoDB Developer Certification",
+      "MongoDB Certified Developer"
+    ]
+  },
+  {
+    "slug": "mongodb-professional-dba",
+    "display_name": "MongoDB Certified Database Administrator, Professional",
+    "aliases": [
+      "MongoDB Professional DBA"
+    ]
+  },
+  {
+    "slug": "mongodb-professional-developer",
+    "display_name": "MongoDB Certified Developer, Professional",
+    "aliases": [
+      "MongoDB Professional Developer"
+    ]
+  },
+  {
+    "slug": "ms-md102",
+    "display_name": "Endpoint Administrator Associate",
+    "aliases": [
+      "MD-102",
+      "Microsoft 365 Endpoint Administrator"
+    ]
+  },
+  {
+    "slug": "ms-ms102",
+    "display_name": "Microsoft 365 Administrator Expert",
+    "aliases": [
+      "MS-102"
+    ]
+  },
+  {
+    "slug": "mulesoft-architect",
+    "display_name": "MuleSoft Certified Integration Architect",
+    "aliases": [
+      "MuleSoft Architect"
+    ]
+  },
+  {
+    "slug": "mulesoft-developer",
+    "display_name": "MuleSoft Certified Developer Level 1",
+    "aliases": [
+      "MuleSoft Developer",
+      "MCD Level 1"
+    ]
+  },
+  {
+    "slug": "nutanix-nca",
+    "display_name": "Nutanix Certified Associate",
+    "aliases": [
+      "NCA Nutanix"
+    ]
+  },
+  {
+    "slug": "nvidia-dlai",
+    "display_name": "NVIDIA-Certified Associate: Generative AI LLMs",
+    "aliases": [
+      "NVIDIA Generative AI",
+      "NCA-GENL"
+    ]
+  },
+  {
+    "slug": "okta-administrator",
+    "display_name": "Okta Certified Administrator",
+    "aliases": [
+      "Okta Administrator"
+    ]
+  },
+  {
+    "slug": "openshift-admin",
+    "display_name": "Red Hat Certified Specialist in OpenShift Administration",
+    "aliases": [
+      "EX280",
+      "OpenShift Administrator"
+    ]
+  },
+  {
+    "slug": "oracle-java-ocp-8",
+    "display_name": "Oracle Certified Professional, Java SE 8 Programmer",
+    "aliases": [
+      "OCP Java 8",
+      "1Z0-809"
+    ]
+  },
+  {
+    "slug": "oracle-oca-java",
+    "display_name": "Oracle Certified Associate Java SE",
+    "aliases": [
+      "Oracle OCA",
+      "OCA Java",
+      "Java SE 8 OCA",
+      "1Z0-808",
+      "OCAJP 8",
+      "Java SE 8 Programmer I"
+    ]
+  },
+  {
+    "slug": "oracle-oci-architect-associate",
+    "display_name": "Oracle Cloud Infrastructure Architect Associate",
+    "aliases": [
+      "OCI Architect Associate",
+      "1Z0-1072"
+    ]
+  },
+  {
+    "slug": "oracle-oci-developer",
+    "display_name": "Oracle Cloud Infrastructure Developer Associate",
+    "aliases": [
+      "OCI Developer"
+    ]
+  },
+  {
+    "slug": "oracle-ocp-java-11",
+    "display_name": "Oracle Certified Professional Java SE 11",
+    "aliases": [
+      "OCP Java 11",
+      "1Z0-819",
+      "Java 11 OCP"
+    ]
+  },
+  {
+    "slug": "oracle-ocp-java-17",
+    "display_name": "Oracle Certified Professional Java SE 17",
+    "aliases": [
+      "OCP Java 17",
+      "1Z0-829",
+      "Java 17 OCP"
+    ]
+  },
+  {
+    "slug": "oracle-ocp-java-21",
+    "display_name": "Oracle Certified Professional Java SE 21",
+    "aliases": [
+      "OCP Java 21",
+      "1Z0-830",
+      "Java 21 OCP"
+    ]
+  },
+  {
+    "slug": "oscp",
+    "display_name": "Offensive Security Certified Professional",
+    "aliases": [
+      "OSCP",
+      "OffSec OSCP"
+    ]
+  },
+  {
+    "slug": "osee",
+    "display_name": "Offensive Security Exploitation Expert",
+    "aliases": [
+      "OSEE"
+    ]
+  },
+  {
+    "slug": "oswa",
+    "display_name": "Offensive Security Web Assessor",
+    "aliases": [
+      "OSWA"
+    ]
+  },
+  {
+    "slug": "palo-alto-pcnse",
+    "display_name": "Palo Alto Networks PCNSE",
+    "aliases": [
+      "PCNSE"
+    ]
+  },
+  {
+    "slug": "palo-alto-pcsa",
+    "display_name": "Palo Alto Networks PCSA",
+    "aliases": [
+      "PCNSA",
+      "PCSA"
+    ]
+  },
+  {
+    "slug": "pmi-acp",
+    "display_name": "PMI-ACP",
+    "aliases": [
+      "PMI-ACP",
+      "Agile Certified Practitioner"
+    ]
+  },
+  {
+    "slug": "pmp",
+    "display_name": "Project Management Professional",
+    "aliases": [
+      "PMP",
+      "PMI PMP"
+    ]
+  },
+  {
+    "slug": "power-bi-pl300",
+    "display_name": "Power BI Data Analyst Associate",
+    "aliases": [
+      "PL-300",
+      "Power BI Analyst"
+    ]
+  },
+  {
+    "slug": "prince2-foundation",
+    "display_name": "PRINCE2 Foundation",
+    "aliases": [
+      "PRINCE2 Foundation"
+    ]
+  },
+  {
+    "slug": "prince2-practitioner",
+    "display_name": "PRINCE2 Practitioner",
+    "aliases": [
+      "PRINCE2 Practitioner"
+    ]
+  },
+  {
+    "slug": "prometheus-pca",
+    "display_name": "Prometheus Certified Associate",
+    "aliases": [
+      "PCA Prometheus"
+    ]
+  },
+  {
+    "slug": "psm1",
+    "display_name": "Professional Scrum Master I",
+    "aliases": [
+      "PSM I",
+      "PSM1",
+      "Scrum.org PSM I"
+    ]
+  },
+  {
+    "slug": "psm2",
+    "display_name": "Professional Scrum Master II",
+    "aliases": [
+      "PSM II",
+      "PSM2"
+    ]
+  },
+  {
+    "slug": "pspo1",
+    "display_name": "Professional Scrum Product Owner I",
+    "aliases": [
+      "PSPO I",
+      "PSPO1"
+    ]
+  },
+  {
+    "slug": "pspo2",
+    "display_name": "Professional Scrum Product Owner II",
+    "aliases": [
+      "PSPO II",
+      "PSPO2"
+    ]
+  },
+  {
+    "slug": "python-pcap",
+    "display_name": "PCAP – Certified Associate Python Programmer",
+    "aliases": [
+      "PCAP",
+      "Python Associate"
+    ]
+  },
+  {
+    "slug": "python-pcep",
+    "display_name": "PCEP – Certified Entry-Level Python Programmer",
+    "aliases": [
+      "PCEP",
+      "Python Entry-Level"
+    ]
+  },
+  {
+    "slug": "python-pcpp1",
+    "display_name": "PCPP1 – Certified Professional Python Programmer Level 1",
+    "aliases": [
+      "PCPP1",
+      "PCPP-32-101"
+    ]
+  },
+  {
+    "slug": "python-pcpp2",
+    "display_name": "PCPP2 – Certified Professional Python Programmer Level 2",
+    "aliases": [
+      "PCPP2"
+    ]
+  },
+  {
+    "slug": "react-meta",
+    "display_name": "Meta Front-End Developer Certificate",
+    "aliases": [
+      "Meta Front-End",
+      "Coursera Meta Front-End"
+    ]
+  },
+  {
+    "slug": "redis-certified-administrator",
+    "display_name": "Redis Certified Administrator",
+    "aliases": [
+      "Redis Admin cert"
+    ]
+  },
+  {
+    "slug": "redis-rcd",
+    "display_name": "Redis Certified Developer",
+    "aliases": [
+      "Redis Developer Certification"
+    ]
+  },
+  {
+    "slug": "rhce",
+    "display_name": "Red Hat Certified Engineer",
+    "aliases": [
+      "RHCE",
+      "Red Hat Engineer"
+    ]
+  },
+  {
+    "slug": "rhcsa",
+    "display_name": "Red Hat Certified System Administrator",
+    "aliases": [
+      "RHCSA",
+      "Red Hat System Administrator"
+    ]
+  },
+  {
+    "slug": "safe-agilist",
+    "display_name": "SAFe Agilist",
+    "aliases": [
+      "SAFe Agilist",
+      "Leading SAFe",
+      "SAFe"
+    ]
+  },
+  {
+    "slug": "safe-popm",
+    "display_name": "SAFe Product Owner / Product Manager",
+    "aliases": [
+      "SAFe POPM"
+    ]
+  },
+  {
+    "slug": "safe-practitioner",
+    "display_name": "SAFe Practitioner",
+    "aliases": [
+      "SAFe Practitioner",
+      "SP"
+    ]
+  },
+  {
+    "slug": "safe-scrum-master",
+    "display_name": "SAFe Scrum Master",
+    "aliases": [
+      "SAFe Scrum Master",
+      "SSM"
+    ]
+  },
+  {
+    "slug": "salesforce-admin",
+    "display_name": "Salesforce Certified Administrator",
+    "aliases": [
+      "Salesforce Admin",
+      "Salesforce Administrator"
+    ]
+  },
+  {
+    "slug": "salesforce-advanced-admin",
+    "display_name": "Salesforce Certified Advanced Administrator",
+    "aliases": [
+      "Advanced Admin",
+      "ADM-211"
+    ]
+  },
+  {
+    "slug": "salesforce-app-builder",
+    "display_name": "Salesforce Platform App Builder",
+    "aliases": [
+      "App Builder",
+      "Salesforce App Builder"
+    ]
+  },
+  {
+    "slug": "salesforce-architect",
+    "display_name": "Salesforce Application Architect",
+    "aliases": [
+      "Salesforce Architect"
+    ]
+  },
+  {
+    "slug": "salesforce-pd1",
+    "display_name": "Salesforce Platform Developer I",
+    "aliases": [
+      "PD1",
+      "Platform Developer I",
+      "Salesforce Developer"
+    ]
+  },
+  {
+    "slug": "salesforce-pd2",
+    "display_name": "Salesforce Platform Developer II",
+    "aliases": [
+      "PD2",
+      "Platform Developer II"
+    ]
+  },
+  {
+    "slug": "scrum-csm",
+    "display_name": "Certified ScrumMaster",
+    "aliases": [
+      "CSM",
+      "Certified Scrum Master",
+      "Scrum Alliance CSM"
+    ]
+  },
+  {
+    "slug": "scrum-cspo",
+    "display_name": "Certified Scrum Product Owner",
+    "aliases": [
+      "CSPO"
+    ]
+  },
+  {
+    "slug": "scrum-psm",
+    "display_name": "Professional Scrum Master",
+    "aliases": [
+      "PSM I",
+      "PSM II",
+      "Professional Scrum Master",
+      "Scrum.org PSM"
+    ]
+  },
+  {
+    "slug": "scrum-pspo",
+    "display_name": "Professional Scrum Product Owner",
+    "aliases": [
+      "PSPO I",
+      "PSPO II",
+      "Professional Scrum Product Owner"
+    ]
+  },
+  {
+    "slug": "servicenow-cad",
+    "display_name": "ServiceNow Certified Application Developer",
+    "aliases": [
+      "ServiceNow CAD",
+      "CAD ServiceNow"
+    ]
+  },
+  {
+    "slug": "servicenow-cis-itsm",
+    "display_name": "ServiceNow CIS ITSM",
+    "aliases": [
+      "CIS-ITSM"
+    ]
+  },
+  {
+    "slug": "servicenow-csa",
+    "display_name": "ServiceNow Certified System Administrator",
+    "aliases": [
+      "ServiceNow CSA",
+      "CSA ServiceNow"
+    ]
+  },
+  {
+    "slug": "snowflake-admin",
+    "display_name": "SnowPro Advanced: Administrator",
+    "aliases": [
+      "SnowPro Administrator",
+      "ADA-C01"
+    ]
+  },
+  {
+    "slug": "snowflake-advanced-architect",
+    "display_name": "SnowPro Advanced Architect",
+    "aliases": [
+      "SnowPro Advanced: Architect"
+    ]
+  },
+  {
+    "slug": "snowflake-core",
+    "display_name": "SnowPro Core",
+    "aliases": [
+      "SnowPro",
+      "SnowPro Core Certification",
+      "Snowflake certification"
+    ]
+  },
+  {
+    "slug": "snowflake-data-engineer",
+    "display_name": "SnowPro Advanced Data Engineer",
+    "aliases": [
+      "SnowPro Data Engineer"
+    ]
+  },
+  {
+    "slug": "snowflake-data-scientist",
+    "display_name": "SnowPro Advanced: Data Scientist",
+    "aliases": [
+      "SnowPro Data Scientist",
+      "DSA-C03"
+    ]
+  },
+  {
+    "slug": "splunk-core-user",
+    "display_name": "Splunk Core Certified User",
+    "aliases": [
+      "Splunk Core User"
+    ]
+  },
+  {
+    "slug": "splunk-enterprise-admin",
+    "display_name": "Splunk Enterprise Certified Admin",
+    "aliases": [
+      "Splunk Enterprise Admin"
+    ]
+  },
+  {
+    "slug": "spring-professional",
+    "display_name": "Spring Professional Certification",
+    "aliases": [
+      "Spring Professional",
+      "VMware Spring Professional",
+      "Broadcom Spring Certified"
+    ]
+  },
+  {
+    "slug": "sscp",
+    "display_name": "Systems Security Certified Practitioner",
+    "aliases": [
+      "SSCP"
+    ]
+  },
+  {
+    "slug": "tableau-certified-data-analyst",
+    "display_name": "Tableau Certified Data Analyst",
+    "aliases": [
+      "Tableau Data Analyst"
+    ]
+  },
+  {
+    "slug": "tableau-desktop-specialist",
+    "display_name": "Tableau Desktop Specialist",
+    "aliases": [
+      "Tableau Desktop Specialist"
+    ]
+  },
+  {
+    "slug": "terraform-associate",
+    "display_name": "HashiCorp Terraform Associate",
+    "aliases": [
+      "Terraform Associate",
+      "HashiCorp Certified: Terraform Associate",
+      "Terraform certification"
+    ]
+  },
+  {
+    "slug": "togaf-foundation",
+    "display_name": "TOGAF Enterprise Architecture Foundation",
+    "aliases": [
+      "TOGAF",
+      "TOGAF 9",
+      "TOGAF 10"
+    ]
+  },
+  {
+    "slug": "togaf-practitioner",
+    "display_name": "TOGAF Enterprise Architecture Practitioner",
+    "aliases": [
+      "TOGAF Practitioner"
+    ]
+  },
+  {
+    "slug": "vault-associate",
+    "display_name": "HashiCorp Vault Associate",
+    "aliases": [
+      "Vault Associate",
+      "HashiCorp Vault"
+    ]
+  },
+  {
+    "slug": "vault-professional",
+    "display_name": "HashiCorp Certified: Vault Professional",
+    "aliases": [
+      "Vault Professional",
+      "HashiCorp Vault Professional"
+    ]
+  },
+  {
+    "slug": "veeam-vmce",
+    "display_name": "Veeam Certified Engineer",
+    "aliases": [
+      "VMCE",
+      "Veeam Engineer"
+    ]
+  },
+  {
+    "slug": "vmware-vcp-dcv",
+    "display_name": "VMware VCP-DCV",
+    "aliases": [
+      "VCP-DCV",
+      "VMware Certified Professional"
+    ]
+  },
+  {
+    "slug": "wordpress-developer",
+    "display_name": "WordPress Developer Certification",
+    "aliases": [
+      "WordPress Certified Developer"
+    ]
+  },
+  {
+    "slug": "zend-php",
+    "display_name": "Zend Certified PHP Engineer",
+    "aliases": [
+      "ZCE",
+      "Zend PHP"
+    ]
+  }
+]

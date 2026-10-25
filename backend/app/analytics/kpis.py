@@ -70,6 +70,10 @@ def _lens_where(job_id_subq: Optional[Select]):
     return (Job.id.in_(job_id_subq),) if job_id_subq is not None else ()
 
 
+def _clamp_top_n(top_n: int) -> int:
+    return max(1, min(int(top_n), 100))
+
+
 def dashboard_summary(
     db: Session,
     *,
@@ -77,8 +81,13 @@ def dashboard_summary(
     country_code: Optional[str] = None,
     lens: Optional[str] = None,
     query_ids: Optional[Sequence[int]] = None,
+    top_n: int = 100,
 ) -> dict[str, Any]:
-    """Dashboard KPIs. ``lens=None`` = all jobs; pass ``market`` for Demand Compass."""
+    """Dashboard KPIs. ``lens=None`` = all jobs; pass ``market`` for Demand Compass.
+
+    ``top_n`` (1–100, default 100) caps ``top_technologies`` and ``top_countries``.
+    """
+    top_n = _clamp_top_n(top_n)
     lens_name = parse_lens(lens)
     codes = parse_country_codes(country_code)
     country_clause = country_codes_clause(codes)
@@ -87,10 +96,20 @@ def dashboard_summary(
             db, query_ids=query_ids, days=days, country_code=country_code
         )
         market = dashboard_summary(
-            db, days=days, country_code=country_code, lens="market", query_ids=query_ids
+            db,
+            days=days,
+            country_code=country_code,
+            lens="market",
+            query_ids=query_ids,
+            top_n=top_n,
         )
         focus = dashboard_summary(
-            db, days=days, country_code=country_code, lens="focus", query_ids=query_ids
+            db,
+            days=days,
+            country_code=country_code,
+            lens="focus",
+            query_ids=query_ids,
+            top_n=top_n,
         )
         # Lift shared / market-side fields so clients can read top-level without
         # special-casing compare (sources / period are not lens-split; guided UI
@@ -193,7 +212,7 @@ def dashboard_summary(
         .where(*tech_conds)
         .group_by(Technology.canonical_name)
         .order_by(func.count(JobSkill.id).desc())
-        .limit(10)
+        .limit(top_n)
     ).all()
 
     country_conds = [
@@ -209,7 +228,7 @@ def dashboard_summary(
         .where(*country_conds)
         .group_by(Job.country_code)
         .order_by(func.count(Job.id).desc())
-        .limit(10)
+        .limit(top_n)
     ).all()
 
     sources = db.scalars(select(Source)).all()

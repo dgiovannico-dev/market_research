@@ -2,7 +2,7 @@
 
 **Status:** Accepted (revised 2026-10-20)  
 **Date:** 2026-10-20  
-**Related:** [ADR-001](./ADR-001-evidence-first-kpis.md), [ADR-003](./ADR-003-authorized-connectors-only.md), [SPEC-research-intents](../specs/SPEC-research-intents.md), [Demand Compass idea](../ideas/freelance-demand-compass.md)
+**Related:** [ADR-001](./ADR-001-evidence-first-kpis.md), [ADR-003](./ADR-003-authorized-connectors-only.md), [manuals/RESEARCH.md](../manuals/RESEARCH.md)
 
 ## Context
 
@@ -53,7 +53,7 @@ A first draft of this ADR made **user Research Intents** the only topic-scoped s
 ### Neutral
 
 - Evidence-first KPI rules unchanged (ADR-001).
-- Persona in PRODUCT.md remains marketing/persona, not the sync control plane.
+- Product persona framing is not the sync control plane (intents + lenses are).
 
 ## Alternatives considered
 

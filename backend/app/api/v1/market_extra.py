@@ -5,6 +5,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from app.analytics.certifications import top_certifications
 from app.analytics.cooccurrence import skill_cooccurrence
 from app.analytics.countries import country_comparison
 from app.analytics.facets import market_facets
@@ -45,6 +46,41 @@ def market_facets_route(
         country_code=country_code,
         lens=lens_name,
         query_ids=qids,
+        min_evidence=min_evidence_query(min_evidence),
+    )
+
+
+@router.get(
+    "/market/certifications/top",
+    summary="Top certifications by observed job mentions",
+    description=(
+        "Evidence-first counts of certification taxonomy hits in job title/description. "
+        "Not a market-size estimate (ADR-001)."
+    ),
+)
+def market_certifications_top(
+    days: int = Query(90, ge=7, le=730),
+    country_code: Optional[str] = Query(
+        None,
+        description="ISO country code or CSV (e.g. IT,CH)",
+    ),
+    lens: Optional[str] = Query(None, description="Omit for all jobs; market|focus|compare."),
+    query_ids: Optional[list[str]] = Query(None),
+    min_evidence: Optional[str] = Query(
+        None,
+        description="Corpus gate: standard (default), all, or thin.",
+    ),
+    top_n: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    lens_name, qids = parse_lens_params(lens, query_ids)
+    return top_certifications(
+        db,
+        days=days,
+        country_code=country_code,
+        lens=lens_name,
+        query_ids=qids,
+        top_n=top_n,
         min_evidence=min_evidence_query(min_evidence),
     )
 
@@ -149,6 +185,16 @@ def market_cooccurrence(
         None,
         description="Corpus gate: standard (default), all, or thin.",
     ),
+    seed: Optional[str] = Query(
+        None,
+        description="Canonical technology name — return only pairs involving this tech.",
+    ),
+    neighbor_limit: Optional[int] = Query(
+        None,
+        ge=1,
+        le=100,
+        description="When seed is set, max neighbor pairs by support (default: all up to 200).",
+    ),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     lens_name, qids = parse_lens_params(lens, query_ids)
@@ -160,6 +206,8 @@ def market_cooccurrence(
         lens=lens_name,
         query_ids=qids,
         min_evidence=min_evidence_query(min_evidence),
+        seed=seed,
+        neighbor_limit=neighbor_limit,
     )
 
 

@@ -47,7 +47,7 @@ class HttpExternalStats:
                 "download_url": LATEST_CSV_URL,
                 "hint": (
                     "Set ADEM_CSV_PATH to a local skills-vacancies CSV "
-                    "(see docs/sources/ADEM_LU_SKILLS_OPENDATA.md), then retry."
+                    "(see data/sources/catalog.json (ADEM stats, not jobs)), then retry."
                 ),
                 "disclaimer": (
                     "Not live job ads — do not mix into Countries KPI counts."

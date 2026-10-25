@@ -105,7 +105,10 @@ function RatesDashboardInner() {
   const {
     visible: visibleRows,
     hasMore,
+    isExpanded,
     loadMore,
+    expandAll,
+    collapse,
     shown,
     total: listTotal,
   } = useClientPageWindow(
@@ -248,7 +251,10 @@ function RatesDashboardInner() {
         {sorted.length > 0 ? (
           <ScrollLoadFooter
             hasMore={hasMore}
+            isExpanded={isExpanded}
             onLoadMore={loadMore}
+            onExpandAll={expandAll}
+            onCollapse={collapse}
             shown={shown}
             total={listTotal}
           />

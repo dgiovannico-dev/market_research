@@ -1,0 +1,149 @@
+{{- if .Values.api.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fmi.api.fullname" . }}
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  type: {{ .Values.api.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.api.service.port }}
+      targetPort: http
+  selector:
+    {{- include "fmi.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fmi.api.fullname" . }}
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "fmi.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        {{- include "fmi.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: migrate
+          image: {{ include "fmi.image" (dict "global" .Values.global "repository" .Values.api.image.repository "tag" .Values.api.image.tag) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              i=0
+              until alembic upgrade head; do
+                i=$((i + 1))
+                if [ "$i" -ge 60 ]; then exit 1; fi
+                sleep 2
+              done
+          envFrom:
+            - configMapRef:
+                name: {{ include "fmi.configMapName" . }}
+            - secretRef:
+                name: {{ include "fmi.secretName" . }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      containers:
+        - name: api
+          image: {{ include "fmi.image" (dict "global" .Values.global "repository" .Values.api.image.repository "tag" .Values.api.image.tag) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: {{ include "fmi.configMapName" . }}
+            - secretRef:
+                name: {{ include "fmi.secretName" . }}
+          volumeMounts:
+            {{- if .Values.api.persistence.enabled }}
+            - name: data
+              mountPath: /data
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        {{- if .Values.api.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "fmi.api.fullname" . }}-data
+        {{- end }}
+{{- if and .Values.api.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "fmi.api.fullname" . }}-data
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.api.persistence.storageClass }}
+  storageClassName: {{ .Values.api.persistence.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.api.persistence.size }}
+{{- end }}
+{{- if and .Values.api.pdb.enabled (gt (int .Values.api.replicaCount) 1) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "fmi.api.fullname" . }}
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  minAvailable: {{ .Values.api.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "fmi.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+{{- end }}
+{{- end }}

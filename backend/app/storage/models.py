@@ -11,12 +11,20 @@ from app.storage.models_core import (
     SourceVerification,
 )
 from app.storage.models_skills import (
+    Certification,
     DuplicateGroup,
+    JobCertification,
     JobRate,
     JobSkill,
     JobSnapshot,
     MarketMetricDaily,
     Technology,
+)
+from app.storage.models_llm import (
+    LlmAdminAudit,
+    LlmPromptTemplate,
+    LlmPromptVersion,
+    LlmRuntimeConfig,
 )
 from app.storage.models_user import (
     AlertRule,
@@ -39,6 +47,8 @@ __all__ = [
     "Job",
     "Technology",
     "JobSkill",
+    "Certification",
+    "JobCertification",
     "JobRate",
     "JobSnapshot",
     "MarketMetricDaily",
@@ -50,4 +60,8 @@ __all__ = [
     "AlertRule",
     "LlmModel",
     "AuditLog",
+    "LlmRuntimeConfig",
+    "LlmPromptTemplate",
+    "LlmPromptVersion",
+    "LlmAdminAudit",
 ]

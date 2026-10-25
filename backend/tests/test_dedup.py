@@ -205,7 +205,42 @@ def test_empty_url_is_rejected_and_skipped_by_ingest(db):
     assert missing == 0
 
 
+def test_same_description_hash_different_urls_stay_separate(db):
+    """Multi-location / multi-title ads often share boilerplate — do not merge on hash."""
+    source = _source(db, "dedup_hash")
+    body = "Identical boilerplate description used in two city postings."
+    first = RawJob(
+        source_job_id=_unique("hash-a"),
+        url=f"https://example.com/jobs/{_unique('city-a')}",
+        title="Engineer Berlin",
+        company="Acme",
+        description=body,
+        published_at=datetime.now(timezone.utc),
+    )
+    second = RawJob(
+        source_job_id=_unique("hash-b"),
+        url=f"https://example.com/jobs/{_unique('city-b')}",
+        title="Engineer Munich",
+        company="Acme",
+        description=body,
+        published_at=datetime.now(timezone.utc),
+    )
+    job1, action1 = upsert_raw_job(db, source_id=source.id, raw=first)
+    db.flush()
+    job2, action2 = upsert_raw_job(db, source_id=source.id, raw=second)
+    db.flush()
+    assert action1 == "inserted"
+    assert action2 == "inserted"
+    assert job1.id != job2.id
+    assert job1.description_hash == job2.description_hash
+    count = db.scalar(
+        select(func.count()).select_from(Job).where(Job.source_id == source.id)
+    )
+    assert count == 2
+
+
 def test_find_duplicate_matches_by_canonical_url(db):
+
     source = _source(db, "dedup_find")
     url = f"https://example.com/jobs/{_unique('find-url')}"
     raw = RawJob(

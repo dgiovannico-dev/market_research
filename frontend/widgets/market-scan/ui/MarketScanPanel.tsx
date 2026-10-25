@@ -30,7 +30,10 @@ export function MarketScanPanel() {
   const {
     visible,
     hasMore,
+    isExpanded,
     loadMore,
+    expandAll,
+    collapse,
     shown,
     total: listTotal,
   } = useClientPageWindow(filtered, 20, `${probeFilter}|${filtered.length}`);
@@ -112,7 +115,10 @@ export function MarketScanPanel() {
           ))}
           <ScrollLoadFooter
             hasMore={hasMore}
+            isExpanded={isExpanded}
             onLoadMore={loadMore}
+            onExpandAll={expandAll}
+            onCollapse={collapse}
             shown={shown}
             total={listTotal}
           />

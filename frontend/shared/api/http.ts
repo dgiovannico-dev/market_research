@@ -1,3 +1,5 @@
+import { authHeaders } from "@/features/auth";
+
 export class ApiRequestError extends Error {
   readonly status: number;
   readonly path: string;
@@ -27,7 +29,13 @@ const API_URL = PUBLIC_API_URL;
 
 export async function requestJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const base = resolveApiBase();
-  const res = await fetch(`${base}${path}`, { cache: "no-store", ...init });
+  const headers = new Headers(init?.headers);
+  if (typeof window !== "undefined") {
+    for (const [k, v] of Object.entries(authHeaders())) {
+      if (!headers.has(k)) headers.set(k, v);
+    }
+  }
+  const res = await fetch(`${base}${path}`, { cache: "no-store", ...init, headers });
   if (!res.ok) {
     let detail: string | undefined;
     try {

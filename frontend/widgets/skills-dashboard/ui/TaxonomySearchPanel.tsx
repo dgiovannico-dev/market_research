@@ -23,7 +23,7 @@ type Provider = "esco" | "jobtech";
 export function TaxonomySearchPanel() {
   const t = useTranslations("taxonomy");
   const [provider, setProvider] = useState<Provider>("esco");
-  const [q, setQ] = useState("software engineer");
+  const [q, setQ] = useState(() => t("defaultQueryEsco"));
   const [type, setType] = useState<"occupation" | "skill">("occupation");
   const [data, setData] = useState<TaxResponse | null>(null);
   const [error, setError] = useState("");
@@ -66,8 +66,10 @@ export function TaxonomySearchPanel() {
             onChange={(e) => {
               const next = e.target.value as Provider;
               setProvider(next);
-              if (next === "jobtech" && type === "occupation") setQ("utvecklare");
-              if (next === "esco") setQ("software engineer");
+              if (next === "jobtech" && type === "occupation") {
+                setQ(t("defaultQueryJobtech"));
+              }
+              if (next === "esco") setQ(t("defaultQueryEsco"));
             }}
             className="rounded border border-[var(--line)] bg-transparent px-2 py-1.5 text-sm"
           >
@@ -114,7 +116,7 @@ export function TaxonomySearchPanel() {
             <li key={item.uri || item.code || item.title} className="border-b border-[var(--line)] py-2">
               <div className="font-medium">{item.title}</div>
               <div className="text-xs opacity-60">
-                {item.code ? `id ${item.code}` : null}
+                {item.code ? t("conceptId", { code: item.code }) : null}
                 {item.code && item.class_name ? " · " : null}
                 {item.class_name || null}
               </div>

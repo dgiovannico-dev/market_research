@@ -66,7 +66,7 @@ def credentialed_connectors_status(db: Session | None = None) -> dict[str, objec
             "Does not expose secret values. ACTIVE requires a successful live run."
         ),
         "items": items,
-        "docs": "docs/sources/CREDENTIALED_CONNECTORS.md",
+        "docs": "docs/ops/RUNBOOKS.md",
     }
 
 

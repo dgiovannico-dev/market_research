@@ -32,6 +32,7 @@ def adjacent(
     query_ids: Optional[Sequence[int]] = None,
     period_days: int = 90,
     country_code: Optional[str] = None,
+    owned_skills: Optional[Sequence[str]] = None,
 ) -> dict[str, Any]:
     n = lens_sample_size(
         db,
@@ -62,7 +63,10 @@ def adjacent(
     if refused:
         return refused
 
-    owned = profile_skill_names(db)
+    if owned_skills is not None:
+        owned = {s.strip() for s in owned_skills if s and str(s).strip()}
+    else:
+        owned = profile_skill_names(db)
     alens = flat_lens(lens)
     co = skill_cooccurrence(
         db,
@@ -133,6 +137,7 @@ def suggest_watches(
     query_ids: Optional[Sequence[int]] = None,
     period_days: int = 90,
     country_code: Optional[str] = None,
+    owned_skills: Optional[Sequence[str]] = None,
 ) -> dict[str, Any]:
     """Propose intents only — never INSERT SearchQuery."""
     n = lens_sample_size(
@@ -164,7 +169,10 @@ def suggest_watches(
     if refused:
         return refused
 
-    owned = profile_skill_names(db)
+    if owned_skills is not None:
+        owned = {s.strip() for s in owned_skills if s and str(s).strip()}
+    else:
+        owned = profile_skill_names(db)
     alens = flat_lens(lens)
     co = skill_cooccurrence(
         db,

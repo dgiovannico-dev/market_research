@@ -54,6 +54,7 @@ def render_brief(
     query_ids: Optional[Sequence[int]] = None,
     period_days: int = 90,
     country_code: Optional[str] = None,
+    owned_skills: Optional[Sequence[str]] = None,
 ) -> dict[str, Any]:
     if brief_type not in BRIEF_TYPES:
         return base_payload(
@@ -76,10 +77,13 @@ def render_brief(
             limits="Valid lenses: market, focus, compare",
             status="refused",
         )
-    return _HANDLERS[brief_type](
-        db,
-        lens=resolved,
-        query_ids=query_ids,
-        period_days=period_days,
-        country_code=country_code,
-    )
+    kwargs: dict[str, Any] = {
+        "lens": resolved,
+        "query_ids": query_ids,
+        "period_days": period_days,
+        "country_code": country_code,
+    }
+    # LocalStorage profile skills (ADR-009) — only adjacent / suggest_watches.
+    if brief_type in ("adjacent", "suggest_watches") and owned_skills is not None:
+        kwargs["owned_skills"] = owned_skills
+    return _HANDLERS[brief_type](db, **kwargs)

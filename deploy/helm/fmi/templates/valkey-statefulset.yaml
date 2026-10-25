@@ -1,0 +1,84 @@
+{{- if .Values.valkey.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fmi.valkey.fullname" . }}
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: valkey
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+  selector:
+    {{- include "fmi.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: valkey
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fmi.valkey.fullname" . }}
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: valkey
+spec:
+  serviceName: {{ include "fmi.valkey.fullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "fmi.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: valkey
+  template:
+    metadata:
+      labels:
+        {{- include "fmi.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: valkey
+    spec:
+      containers:
+        - name: valkey
+          image: {{ include "fmi.image" (dict "global" .Values.global "repository" .Values.valkey.image.repository "tag" .Values.valkey.image.tag) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          args: ["valkey-server", "--save", "60", "1", "--loglevel", "warning"]
+          ports:
+            - name: redis
+              containerPort: 6379
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            exec:
+              command: ["valkey-cli", "ping"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["valkey-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.valkey.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+  {{- if .Values.valkey.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.valkey.persistence.storageClass }}
+        storageClassName: {{ .Values.valkey.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.valkey.persistence.size }}
+  {{- else }}
+      volumes:
+        - name: data
+          emptyDir: {}
+  {{- end }}
+{{- end }}

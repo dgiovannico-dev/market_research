@@ -24,6 +24,8 @@ export type RankBarsProps = {
   className?: string;
   maxBars?: number;
   valueLabel?: string;
+  /** When set, bar click reports the category label (for deep-links). */
+  onBarClick?: (label: string) => void;
 };
 
 export function RankBars({
@@ -34,6 +36,7 @@ export function RankBars({
   className,
   maxBars,
   valueLabel,
+  onBarClick,
 }: RankBarsProps) {
   const t = useTranslations("charts");
   const initialTopN: ChartTopN =
@@ -106,6 +109,26 @@ export function RankBars({
 
   const height = Math.max(160, rows.length * 28 + 24);
 
+  const onEvents = useMemo(() => {
+    if (!onBarClick) return undefined;
+    return {
+      click: (params: {
+        name?: string;
+        componentType?: string;
+        dataIndex?: number;
+      }) => {
+        if (params.componentType !== "series") return;
+        let label = params.name ? String(params.name) : "";
+        if (!label && typeof params.dataIndex === "number") {
+          // Category axis is reversed for display; map dataIndex back.
+          const labels = rows.map((r) => r.label).reverse();
+          label = labels[params.dataIndex] ?? "";
+        }
+        if (label) onBarClick(label);
+      },
+    };
+  }, [onBarClick, rows]);
+
   return (
     <ChartFrame
       title={title}
@@ -130,7 +153,16 @@ export function RankBars({
       className={className}
     >
       {!empty ? (
-        <ReactECharts option={option} style={{ height, width: "100%" }} opts={{ renderer: "svg" }} />
+        <ReactECharts
+          option={option}
+          style={{
+            height,
+            width: "100%",
+            cursor: onBarClick ? "pointer" : undefined,
+          }}
+          opts={{ renderer: "svg" }}
+          onEvents={onEvents}
+        />
       ) : null}
     </ChartFrame>
   );

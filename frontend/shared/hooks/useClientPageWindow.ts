@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const DEFAULT_PAGE = 30;
 
@@ -21,14 +21,29 @@ export function useClientPageWindow<T>(
 
   const visible = items.slice(0, visibleCount);
   const hasMore = visibleCount < items.length;
-  const loadMore = () =>
+  const isExpanded = !hasMore && items.length > pageSize;
+
+  const loadMore = useCallback(() => {
     setVisibleCount((n) => Math.min(n + pageSize, items.length));
+  }, [items.length, pageSize]);
+
+  const expandAll = useCallback(() => {
+    setVisibleCount(items.length);
+  }, [items.length]);
+
+  const collapse = useCallback(() => {
+    setVisibleCount(pageSize);
+  }, [pageSize]);
 
   return {
     visible,
     hasMore,
+    isExpanded,
     loadMore,
+    expandAll,
+    collapse,
     shown: visible.length,
     total: items.length,
+    pageSize,
   };
 }

@@ -1,0 +1,12 @@
+apiVersion: v2
+name: fmi
+description: Freelance Market Intelligence — API, frontend, Postgres, Valkey (k3s / OSS-only)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - fmi
+  - market-research
+maintainers:
+  - name: FMI
+home: https://github.com/danilo-zerodd/market_research

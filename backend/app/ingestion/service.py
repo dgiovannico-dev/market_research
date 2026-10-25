@@ -10,11 +10,13 @@ from app.domain.classification import TAXONOMY, classify_job
 from app.collectors.base import RawJob
 from app.normalization.country_codes import country_code_from_collector_raw
 from app.ingestion.evidence_tier import resolve_evidence_tier, source_snapshot_at_from_raw
+from app.classification.certs import extract_certifications
+from app.ingestion.job_certs import ensure_certifications, sync_job_certifications
 from app.ingestion.job_skills import sync_job_rates, sync_job_skills
 from app.ingestion.snapshots import maybe_add_snapshot
 from app.normalization.hashing import content_hash, normalize_text
 from app.normalization.url import canonicalize_url
-from app.storage.models import Job, JobIntentMatch, Technology
+from app.storage.models import Certification, Job, JobIntentMatch, Technology
 
 # Mirror DB varchar limits so a long collector field cannot abort the whole flush.
 _EMPLOYMENT_TYPE_MAX = 64
@@ -64,6 +66,18 @@ def find_duplicate(
     canonical_url: str,
     description_hash: str | None,
 ) -> Job | None:
+    """Resolve an existing job for idempotent upsert.
+
+    Keys (in order):
+    1. ``(source_id, source_job_id)`` — native id (DB unique)
+    2. ``canonical_url`` among canonical rows — cross-source URL merge
+
+    ``description_hash`` is intentionally *not* used: identical boilerplate
+    across multi-location / multi-title postings (common on ATS boards) would
+    falsely collapse distinct ads. Hash remains stored for change detection /
+    snapshots only.
+    """
+    del description_hash  # kept in signature for call-site stability
     by_native = db.scalar(
         select(Job).where(Job.source_id == source_id, Job.source_job_id == source_job_id)
     )
@@ -75,15 +89,6 @@ def find_duplicate(
         )
         if by_url:
             return by_url
-    if description_hash:
-        by_hash = db.scalar(
-            select(Job).where(
-                Job.description_hash == description_hash,
-                Job.is_canonical.is_(True),
-            )
-        )
-        if by_hash:
-            return by_hash
     return None
 
 
@@ -95,11 +100,13 @@ def upsert_raw_job(
     query_id: Optional[int] = None,
     collection_method: str = "api",
     tech_map: Optional[dict[str, Technology]] = None,
+    cert_map: Optional[dict[str, Certification]] = None,
 ) -> tuple[Job, str]:
     """Returns (job, action) where action is inserted|updated|duplicate."""
     if not (raw.url or "").strip():
         raise ValueError("empty_url")
     tech_map = tech_map if tech_map is not None else ensure_taxonomy(db)
+    cert_map = cert_map if cert_map is not None else ensure_certifications(db)
     url = canonicalize_url(raw.url)
     if not url or url == "/":
         raise ValueError("empty_url")
@@ -206,6 +213,12 @@ def upsert_raw_job(
         db, job, classified_techs=classified.technologies, tech_map=tech_map
     )
     sync_job_rates(db, job, classified_rate=classified.rate or None)
+    sync_job_certifications(
+        db,
+        job,
+        extracted=extract_certifications(raw.title or "", raw.description or ""),
+        cert_map=cert_map,
+    )
 
     maybe_add_snapshot(
         db,
@@ -258,6 +271,7 @@ def ingest_raw_jobs(
 ) -> dict[str, Any]:
     stats = {"inserted": 0, "updated": 0, "duplicates": 0, "errors": 0}
     tech_map = ensure_taxonomy(db) if raw_jobs else {}
+    cert_map = ensure_certifications(db) if raw_jobs else {}
     for raw in raw_jobs:
         try:
             # SAVEPOINT: one bad row must not poison the whole Session (PendingRollback).
@@ -269,6 +283,7 @@ def ingest_raw_jobs(
                     query_id=query_id,
                     collection_method=collection_method,
                     tech_map=tech_map,
+                    cert_map=cert_map,
                 )
             stats[
                 {"inserted": "inserted", "updated": "updated", "duplicate": "duplicates"}[

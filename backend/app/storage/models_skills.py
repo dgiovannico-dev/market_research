@@ -54,6 +54,36 @@ class JobSkill(Base):
     technology: Mapped[Technology] = relationship(back_populates="job_skills")
 
 
+class Certification(Base):
+    __tablename__ = "certifications"
+    __table_args__ = (UniqueConstraint("slug", name="uq_cert_slug"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    slug: Mapped[str] = mapped_column(String(64), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    aliases: Mapped[list[str]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    job_links: Mapped[list["JobCertification"]] = relationship(back_populates="certification")
+
+
+class JobCertification(Base):
+    __tablename__ = "job_certifications"
+    __table_args__ = (
+        UniqueConstraint("job_id", "certification_id", "importance", name="uq_job_cert"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), nullable=False)
+    certification_id: Mapped[int] = mapped_column(ForeignKey("certifications.id"), nullable=False)
+    importance: Mapped[str] = mapped_column(String(32), default="mentioned")
+    extraction_method: Mapped[str] = mapped_column(String(32), default="rules")
+    evidence_span: Mapped[Optional[str]] = mapped_column(Text)
+
+    certification: Mapped[Certification] = relationship(back_populates="job_links")
+
+
+
 class JobRate(Base):
     __tablename__ = "job_rates"
 

@@ -176,7 +176,10 @@ export function QualityBySourceTable({ bySource }: { bySource: BySourceRow[] }) 
       {sorted.length > 0 ? (
         <ScrollLoadFooter
           hasMore={page.hasMore}
+          isExpanded={page.isExpanded}
           onLoadMore={page.loadMore}
+          onExpandAll={page.expandAll}
+          onCollapse={page.collapse}
           shown={page.shown}
           total={page.total}
         />
@@ -346,7 +349,10 @@ export function QualityCatalogTable({
       {sorted.length > 0 ? (
         <ScrollLoadFooter
           hasMore={page.hasMore}
+          isExpanded={page.isExpanded}
           onLoadMore={page.loadMore}
+          onExpandAll={page.expandAll}
+          onCollapse={page.collapse}
           shown={page.shown}
           total={page.total}
         />

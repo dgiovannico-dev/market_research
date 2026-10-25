@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+*.md
+.env*
+!.env.example
+coverage
+tsconfig.tsbuildinfo
+**/*.test.ts
+**/*.test.tsx
+scripts/check-fsd-imports.mjs

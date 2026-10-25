@@ -12,6 +12,7 @@ import type { RatesBoxProps } from "./RatesBox";
 import type { GeoWorldMapProps } from "./GeoWorldMap";
 import type { HeatMatrixProps } from "./HeatMatrix";
 import type { MultiSeriesChartProps } from "./MultiSeriesChart";
+import type { TechCooccurGraphProps } from "./TechCooccurGraph";
 
 function ChartSkeleton({ height = 220 }: { height?: number }) {
   return (
@@ -73,4 +74,9 @@ export const HeatMatrixLazy: ComponentType<HeatMatrixProps> = dynamic(
 export const MultiSeriesChartLazy: ComponentType<MultiSeriesChartProps> = dynamic(
   () => import("./MultiSeriesChart").then((m) => m.MultiSeriesChart),
   { ssr: false, loading: () => <ChartSkeleton height={280} /> },
+);
+
+export const TechCooccurGraphLazy: ComponentType<TechCooccurGraphProps> = dynamic(
+  () => import("./TechCooccurGraph").then((m) => m.TechCooccurGraph),
+  { ssr: false, loading: () => <ChartSkeleton height={420} /> },
 );

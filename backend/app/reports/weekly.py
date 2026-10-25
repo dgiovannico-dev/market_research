@@ -1,21 +1,24 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.adapters.driven.llm.provider import get_llm_provider
 from app.analytics import kpis
 from app.analytics.countries import country_comparison
 from app.analytics.positioning import recommendations, skill_gaps
 from app.analytics.rates import rate_explorer
+from app.application.llm.prompts import resolve_prompt
+from app.application.llm.runtime_config import resolve_llm_settings
 from app.core.config import get_settings
-from app.llm.provider import get_llm_provider
 
 
 async def build_weekly_report(db: Session) -> dict[str, Any]:
     settings = get_settings()
-    summary = kpis.dashboard_summary(db, days=7)
+    summary = kpis.dashboard_summary(db, days=7, top_n=10)
     trends = kpis.technology_trends(db, days=30, min_support=2)
     countries = country_comparison(db, days=30)
     rates = rate_explorer(db, days=90, min_sample=3)
@@ -44,18 +47,30 @@ async def build_weekly_report(db: Session) -> dict[str, Any]:
     }
 
     narrative = None
-    provider = get_llm_provider()
+    cfg = resolve_llm_settings(db)
+    provider = get_llm_provider(db)
     health = await provider.health()
-    if health.get("healthy") and provider.name != "none":
+    if (
+        cfg.provider != "none"
+        and cfg.enable_weekly_report
+        and health.get("healthy")
+        and provider.name != "none"
+    ):
         try:
-            narrative = await provider.classify_text(
-                text=(
-                    "Write a weekly market brief in Markdown using ONLY these facts. "
-                    "If evidence is insufficient say 'dati insufficienti'. Never invent numbers.\n"
-                    f"{structured}"
-                ),
-                schema_hint={"report_markdown": "string"},
+            prompt = resolve_prompt(
+                db,
+                slug="weekly_report",
+                variables={"structured_json": json.dumps(structured, default=str)[:24000]},
             )
+            raw = await provider.chat(
+                [
+                    {"role": "system", "content": prompt["system"]},
+                    {"role": "user", "content": prompt["user"]},
+                ],
+                response_json=True,
+            )
+            narrative = json.loads(raw or "{}")
+            narrative["_prompt_version"] = prompt.get("version")
         except Exception as exc:  # noqa: BLE001
             narrative = {"error": str(exc), "fallback": "rules_only_report"}
 

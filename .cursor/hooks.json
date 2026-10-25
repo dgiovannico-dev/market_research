@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": ".cursor/hooks/compose-stack-due.sh",
+        "timeout": 10
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "fmi-analytics": {
+      "command": "/ABSOLUTE/PATH/TO/market_research/backend/.venv/bin/python",
+      "args": ["-m", "app.mcp"],
+      "cwd": "/ABSOLUTE/PATH/TO/market_research/backend",
+      "env": {
+        "DATABASE_URL": "postgresql+psycopg://fmi:CHANGE_ME@localhost:5432/fmi",
+        "DATABASE_URL_READONLY": ""
+      }
+    }
+  }
+}

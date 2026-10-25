@@ -1,0 +1,183 @@
+# Default values for FMI on k3s (staging-friendly). Override with values-prod.yaml.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Create namespace from release (set false if namespace already exists)
+createNamespace: false
+
+global:
+  imagePullPolicy: IfNotPresent
+  # Optional prefix, e.g. "ghcr.io/org/" — leave empty for local/k3s imported images
+  imageRegistry: ""
+
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+  auth:
+    username: fmi
+    database: fmi
+    # Set via --set postgres.auth.password=... or existingSecret (never commit real secrets)
+    password: ""
+    existingSecret: ""
+    existingSecretPasswordKey: postgres-password
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+# Use when postgres.enabled=false (managed Postgres)
+externalDatabase:
+  url: ""
+
+valkey:
+  enabled: true
+  image:
+    repository: valkey/valkey
+    tag: "8-alpine"
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+# Use when valkey.enabled=false
+externalValkey:
+  url: ""
+
+api:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: fmi-api
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  persistence:
+    # Optional /data volume for collectors
+    enabled: false
+    size: 5Gi
+    storageClass: ""
+  # Non-secret config (ConfigMap). Secrets go under secrets.*
+  env:
+    APP_ENV: production
+    LOG_LEVEL: INFO
+    CLASSIFICATION_MODE: hybrid
+    LLM_PROVIDER: none
+    ENABLE_SCHEDULER: "false"
+    RATE_LIMIT_BACKEND: redis
+    RATE_LIMIT_PER_MINUTE: "180"
+    SECURITY_HEADERS_ENABLED: "true"
+    # Comma-separated frontend origins (must match ingress hosts)
+    API_CORS_ORIGINS: "https://fmi.local"
+  # Extra env key/value merged into ConfigMap (ATS lists, sync budgets, …)
+  extraEnv: {}
+  pdb:
+    enabled: false
+    minAvailable: 1
+
+# External Keycloak (ADR-009). No in-chart IdP — point issuer at a managed realm.
+oidc:
+  enabled: false
+  issuer: ""
+  audience: ""
+  clientId: "fmi-frontend"
+  jwksUrl: ""
+  requireUser: false
+
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: fmi-frontend
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  # Browser-facing API URL (must match build-arg used for the image)
+  publicApiUrl: "https://api.fmi.local"
+  # Cluster-internal SSR URL — chart sets default to http://{{ fullname }}-api:8000 if empty
+  internalApiUrl: ""
+  # NEXT_PUBLIC_* OIDC (prefer bake into Dockerfile.prod; runtime env for non-Next-baked images)
+  oidc:
+    enabled: false
+    keycloakUrl: ""
+    realm: "fmi"
+    clientId: "fmi-frontend"
+  pdb:
+    enabled: false
+    minAvailable: 1
+
+ingress:
+  enabled: true
+  className: traefik
+  # Dual-host (preferred for CORS)
+  hosts:
+    frontend: fmi.local
+    api: api.fmi.local
+  tls:
+    enabled: false
+    # Existing TLS secret in the release namespace (manual or cert-manager)
+    secretName: fmi-tls
+  annotations: {}
+  # cert-manager example:
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt-prod
+
+scheduler:
+  enabled: true
+  # Once daily UTC — matches docs/ops/RELEASE.md / HELM-k3s.md
+  schedule: "0 3 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  image:
+    repository: curlimages/curl
+    tag: "8.11.1"
+  # Uses secrets.apiKey when set (header X-API-Key)
+
+migrate:
+  enabled: true
+  # Helm hook pre-install/pre-upgrade
+  backoffLimit: 3
+
+secrets:
+  # Required when postgres.enabled and no existingSecret
+  postgresPassword: ""
+  # Optional API auth
+  apiKey: ""
+  opsApiToken: ""
+  credentialsMasterKey: ""
+  # Full DATABASE_URL override (skips constructed URL). Prefer constructed from postgres.
+  databaseUrl: ""
+  # Extra secret stringData keys
+  extra: {}

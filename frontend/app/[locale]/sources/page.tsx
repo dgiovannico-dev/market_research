@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { api } from "@/lib/api";
 import { CredentialedConnectors } from "@/widgets/credentialed-connectors";
 import { LlmOpsButtons } from "@/features/ops-llm";
+import { LlmAdminPanel } from "@/widgets/llm-ops";
 import { RunFreeSourcesButton } from "@/features/run-free-sources";
 import {
   CatalogBrowser,
@@ -93,6 +94,7 @@ export default async function SourcesPage({
           </p>
         ) : null}
         <LlmOpsButtons />
+        <LlmAdminPanel />
         <RunFreeSourcesButton
           sources={runnable.map((s) => ({
             id: Number(s.id),

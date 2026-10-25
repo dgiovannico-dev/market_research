@@ -18,6 +18,12 @@ export type DashboardLensParams = {
   minSample?: number;
   /** Evidence gate — forwarded as `min_evidence` when set. */
   minEvidence?: string;
+  /** Dashboard summary top_technologies / top_countries cap (1–100). */
+  topN?: number;
+  /** Co-occurrence ego seed technology (canonical name). */
+  seed?: string;
+  /** Co-occurrence neighbors when seed is set. */
+  neighborLimit?: number;
 };
 
 export function withLensQuery(

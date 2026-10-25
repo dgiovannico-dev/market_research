@@ -45,4 +45,4 @@ Users want to ask natural-language questions and get dashboards/reports. Free-fo
 - New dependency: MCP Python SDK (pinned in requirements when implemented).
 - Ops must document read-only DB URL for MCP and Cursor config without secrets in git.
 - Spec validators become the contract between LLM creativity and product honesty ([ADR-001](ADR-001-evidence-first-kpis.md)).
-- Roadmap: Next after dashboard customization baseline, or parallel if staffing allows ([SPEC-mcp-analytics.md](../specs/SPEC-mcp-analytics.md)).
+- Operator wiring: [ops/RUNBOOKS.md](../ops/RUNBOOKS.md) § MCP.

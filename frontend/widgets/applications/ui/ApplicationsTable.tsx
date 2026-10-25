@@ -55,7 +55,10 @@ export function ApplicationsTable({ items }: Props) {
   const {
     visible: visibleRows,
     hasMore,
+    isExpanded,
     loadMore,
+    expandAll,
+    collapse,
     shown,
     total: listTotal,
   } = useClientPageWindow(
@@ -173,7 +176,10 @@ export function ApplicationsTable({ items }: Props) {
       {sorted.length > 0 ? (
         <ScrollLoadFooter
           hasMore={hasMore}
+          isExpanded={isExpanded}
           onLoadMore={loadMore}
+          onExpandAll={expandAll}
+          onCollapse={collapse}
           shown={shown}
           total={listTotal}
         />

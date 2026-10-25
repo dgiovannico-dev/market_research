@@ -9,7 +9,10 @@ import {
   type TechnologyTrends,
 } from "@/lib/api";
 import { useDashboardPrefs } from "@/features/dashboard-prefs";
-import { useDashboardCountries } from "@/features/country-filter";
+import {
+  nextCountriesOnClick,
+  useDashboardCountries,
+} from "@/features/country-filter";
 import {
   LensToggle,
   useDashboardLens,
@@ -29,6 +32,7 @@ import {
   SparklineLazy,
 } from "@/shared/ui/charts";
 import { ExecutiveMixCharts } from "./ExecutiveMixCharts";
+import { ExecutiveTopLists } from "./ExecutiveTopLists";
 import { Link } from "@/i18n/navigation";
 import { formatDateMinute } from "@/shared/lib/formatDateTime";
 
@@ -66,7 +70,9 @@ function ExecutiveDashboardInner() {
   const tCompass = useTranslations("compass");
   const { prefs, hydrated } = useDashboardPrefs();
   const { lens, queryIds } = useDashboardLens();
-  const { countries: countryCodes } = useDashboardCountries();
+  const { countries: countryCodes, setCountries } = useDashboardCountries();
+  const filterByCountry = (iso: string) =>
+    setCountries(nextCountriesOnClick(countryCodes, iso));
   const guided = prefs.view_mode === "guided";
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [trends, setTrends] = useState<TechnologyTrends | null>(null);
@@ -247,6 +253,14 @@ function ExecutiveDashboardInner() {
         >
           {t("askBrief")}
         </Link>
+        {guided ? (
+          <Link
+            href="/stack"
+            className="rounded-md border border-[var(--line)] bg-[var(--card)] px-4 py-2 text-sm text-[var(--ink)] transition-colors hover:border-[var(--signal)] hover:text-[var(--signal)]"
+          >
+            {t("openStackCompass")}
+          </Link>
+        ) : null}
         <Link
           href="/focus"
           className="rounded-md border border-[var(--line)] bg-[var(--card)] px-4 py-2 text-sm text-[var(--ink)] transition-colors hover:border-[var(--signal)] hover:text-[var(--signal)]"
@@ -273,6 +287,7 @@ function ExecutiveDashboardInner() {
           items={countries}
           periodDays={periodDays}
           title={t("whereDemand")}
+          onCountryClick={filterByCountry}
         />
       </div>
 
@@ -357,63 +372,12 @@ function ExecutiveDashboardInner() {
         </p>
       )}
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <article className="rounded-xl border border-[var(--line)] bg-[var(--card)] p-4">
-          <h2 className="font-display text-base font-semibold tracking-tight text-[var(--ink)]">
-            {t("topTechnologies")}
-          </h2>
-          <ul className="mt-3 space-y-0 text-sm">
-            {loadingData && techs.length === 0 ? (
-              <li className="text-[var(--muted)]">{t("summaryLoading")}</li>
-            ) : techs.length === 0 ? (
-              <li className="text-[var(--muted)]">{t("noTechnologies")}</li>
-            ) : (
-              techs.map((item) => (
-                <li
-                  key={item.technology}
-                  className="flex justify-between border-b border-[var(--line)] py-2 last:border-b-0"
-                >
-                  <Link
-                    href={`/explorer?technology=${encodeURIComponent(item.technology)}`}
-                    className="text-[var(--ink)] hover:text-[var(--signal)]"
-                  >
-                    {item.technology}
-                  </Link>
-                  <span className="text-[var(--muted)]" style={{ fontFamily: "var(--mono)" }}>
-                    {item.job_skill_mentions}
-                  </span>
-                </li>
-              ))
-            )}
-          </ul>
-        </article>
-        <article className="rounded-xl border border-[var(--line)] bg-[var(--card)] p-4">
-          <h2 className="font-display text-base font-semibold tracking-tight text-[var(--ink)]">
-            {t("topCountries")}
-          </h2>
-          <ul className="mt-3 space-y-0 text-sm">
-            {loadingData && countries.length === 0 ? (
-              <li className="text-[var(--muted)]">{t("summaryLoading")}</li>
-            ) : countries.length === 0 ? (
-              <li className="text-[var(--muted)]">{t("noCountries")}</li>
-            ) : (
-              countries.map((c) => (
-                <li
-                  key={c.country_code}
-                  className="flex justify-between border-b border-[var(--line)] py-2 last:border-b-0"
-                >
-                  <span className="text-[var(--ink)]" style={{ fontFamily: "var(--mono)" }}>
-                    {c.country_code}
-                  </span>
-                  <span className="text-[var(--muted)]" style={{ fontFamily: "var(--mono)" }}>
-                    {c.jobs}
-                  </span>
-                </li>
-              ))
-            )}
-          </ul>
-        </article>
-      </section>
+      <ExecutiveTopLists
+        techs={techs}
+        countries={countries}
+        loading={loadingData}
+        onCountryClick={filterByCountry}
+      />
     </div>
   );
 }

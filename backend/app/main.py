@@ -5,9 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.v1.assistant import router as assistant_router
+from app.api.v1.market_certs import router as market_certs_router
 from app.api.v1.market_extra import router as market_extra_router
 from app.api.v1.ops import router as ops_router
 from app.api.v1.ops_credentials import router as ops_credentials_router
+from app.api.v1.ops_llm import router as ops_llm_router
 from app.api.v1.profile_apps import router as profile_apps_router
 from app.api.v1.research import router as research_router
 from app.api.v1.router import router as v1_router
@@ -32,6 +34,9 @@ async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=container.engine)
     with container.session_scope() as db:
         seed_reference_data(db)
+        from app.application.llm.prompts import ensure_seed_prompts
+
+        ensure_seed_prompts(db)
     settings = container.settings
     task = None
     if settings.enable_scheduler:
@@ -73,9 +78,11 @@ def create_app() -> FastAPI:
     )
     app.include_router(v1_router)
     app.include_router(market_extra_router)
+    app.include_router(market_certs_router)
     app.include_router(profile_apps_router)
     app.include_router(ops_router)
     app.include_router(ops_credentials_router)
+    app.include_router(ops_llm_router)
     app.include_router(research_router)
     app.include_router(assistant_router)
     app.include_router(taxonomy_router)

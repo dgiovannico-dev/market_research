@@ -11,6 +11,9 @@ export type NavKey =
   | "rates"
   | "countries"
   | "languages"
+  | "certifications"
+  | "stack"
+  | "learn"
   | "jobs"
   | "profile"
   | "applications"
@@ -50,6 +53,8 @@ export const NAV_ZONES: NavZone[] = [
       { href: "/rates", key: "rates" },
       { href: "/countries", key: "countries" },
       { href: "/languages", key: "languages" },
+      { href: "/certifications", key: "certifications" },
+      { href: "/stack", key: "stack" },
     ],
   },
   {
@@ -58,6 +63,7 @@ export const NAV_ZONES: NavZone[] = [
     items: [
       { href: "/jobs", key: "jobs" },
       { href: "/profile", key: "profile" },
+      { href: "/learn", key: "learn" },
       { href: "/applications", key: "applications" },
     ],
   },

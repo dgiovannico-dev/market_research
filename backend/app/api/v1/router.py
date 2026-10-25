@@ -62,11 +62,22 @@ def dashboard_summary(
         None,
         description="Focus intent ids (repeated and/or comma-separated).",
     ),
+    top_n: int = Query(
+        100,
+        ge=1,
+        le=100,
+        description="Max rows for top_technologies and top_countries (Mostra).",
+    ),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     lens_name, qids = parse_lens_params(lens, query_ids)
     return kpis.dashboard_summary(
-        db, days=days, country_code=country_code, lens=lens_name, query_ids=qids
+        db,
+        days=days,
+        country_code=country_code,
+        lens=lens_name,
+        query_ids=qids,
+        top_n=top_n,
     )
 
 

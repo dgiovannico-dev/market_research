@@ -6,6 +6,8 @@ import type {
   CountryComparison,
   DashboardSummary,
   EscoSearchResult,
+  MarketCertifications,
+  MarketCertificationsByCountry,
   MarketFacets,
   MarketLanguages,
   TechnologyTrends,
@@ -16,10 +18,11 @@ export const marketApi = {
     const opts: DashboardLensParams =
       typeof daysOrOpts === "number" ? { days: daysOrOpts } : daysOrOpts;
     const days = opts.days ?? 30;
+    const topN = opts.topN ?? 100;
     return getJSON<DashboardSummary>(
       withLensQuery(
         "/api/v1/dashboard/summary",
-        { days },
+        { days, top_n: topN },
         opts.lens,
         opts.queryIds,
         opts.countries,
@@ -89,6 +92,42 @@ export const marketApi = {
       ),
     );
   },
+  certificationsTop: (
+    opts: DashboardLensParams & { topN?: number } = {},
+  ) => {
+    const days = opts.days ?? 90;
+    const topN = opts.topN ?? 20;
+    return getJSON<MarketCertifications>(
+      withLensQuery(
+        "/api/v1/market/certifications/top",
+        { days, top_n: topN },
+        opts.lens,
+        opts.queryIds,
+        opts.countries,
+      ),
+    );
+  },
+  certificationsByCountry: (
+    opts: DashboardLensParams & {
+      topNPerCountry?: number;
+      topCountries?: number;
+    } = {},
+  ) => {
+    const days = opts.days ?? 90;
+    return getJSON<MarketCertificationsByCountry>(
+      withLensQuery(
+        "/api/v1/market/certifications/by-country",
+        {
+          days,
+          top_n_per_country: opts.topNPerCountry ?? 5,
+          top_countries: opts.topCountries ?? 40,
+        },
+        opts.lens,
+        opts.queryIds,
+        opts.countries,
+      ),
+    );
+  },
   rates: (opts: DashboardLensParams = {}) => {
     const days = opts.days ?? 180;
     const minSample = opts.minSample ?? 3;
@@ -115,7 +154,13 @@ export const marketApi = {
     return getJSON<CooccurrencePayload>(
       withLensQuery(
         "/api/v1/market/skills/cooccurrence",
-        { days, min_support: support, min_evidence: opts.minEvidence },
+        {
+          days,
+          min_support: support,
+          min_evidence: opts.minEvidence,
+          seed: opts.seed,
+          neighbor_limit: opts.neighborLimit,
+        },
         opts.lens,
         opts.queryIds,
         opts.countries,

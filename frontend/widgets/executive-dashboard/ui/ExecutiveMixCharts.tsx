@@ -6,8 +6,14 @@ import {
   DonutMixLazy,
   RankBarsLazy,
 } from "@/shared/ui/charts";
-import { api, type MarketFacets, type MarketLanguages } from "@/lib/api";
+import {
+  api,
+  type MarketCertifications,
+  type MarketFacets,
+  type MarketLanguages,
+} from "@/lib/api";
 import type { DashboardLens } from "@/lib/api";
+import { useRouter } from "@/i18n/navigation";
 
 type Props = {
   periodDays: number;
@@ -30,6 +36,14 @@ function unwrapLangs(data: MarketLanguages | null): MarketLanguages | null {
   return data;
 }
 
+function unwrapCerts(
+  data: MarketCertifications | null,
+): MarketCertifications | null {
+  if (!data) return null;
+  if (data.lens === "compare") return data.market ?? null;
+  return data;
+}
+
 export function ExecutiveMixCharts({
   periodDays,
   lens,
@@ -40,23 +54,31 @@ export function ExecutiveMixCharts({
 }: Props) {
   const t = useTranslations("charts");
   const tExec = useTranslations("executive");
+  const router = useRouter();
   const [facets, setFacets] = useState<MarketFacets | null>(null);
   const [langs, setLangs] = useState<MarketLanguages | null>(null);
+  const [certs, setCerts] = useState<MarketCertifications | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const opts = { days: periodDays, lens, queryIds, countries };
-    Promise.all([api.facets(opts), api.languages(opts)])
-      .then(([f, l]) => {
+    Promise.all([
+      api.facets(opts),
+      api.languages(opts),
+      api.certificationsTop(opts),
+    ])
+      .then(([f, l, c]) => {
         if (!cancelled) {
           setFacets(f);
           setLangs(l);
+          setCerts(c);
         }
       })
       .catch(() => {
         if (!cancelled) {
           setFacets(null);
           setLangs(null);
+          setCerts(null);
         }
       });
     return () => {
@@ -66,6 +88,7 @@ export function ExecutiveMixCharts({
 
   const facetBody = unwrapFacets(facets);
   const langBody = unwrapLangs(langs);
+  const certBody = unwrapCerts(certs);
   const remote = facetBody?.facets?.remote ?? [];
   const contract = facetBody?.facets?.contract ?? [];
   const langItems = (langBody?.items ?? []).map((it) => ({
@@ -75,6 +98,10 @@ export function ExecutiveMixCharts({
   const techRank = techItems.map((it) => ({
     label: it.technology,
     value: it.job_skill_mentions,
+  }));
+  const certRank = (certBody?.items ?? []).map((it) => ({
+    label: it.certification,
+    value: it.job_mentions,
   }));
 
   return (
@@ -100,6 +127,11 @@ export function ExecutiveMixCharts({
           sampleSize={techSampleSize}
           title={tExec("topTechnologies")}
           valueLabel={t("colMentions")}
+          onBarClick={(tech) => {
+            router.push(
+              `/relations?view=graph&seed=${encodeURIComponent(tech)}`,
+            );
+          }}
         />
         <RankBarsLazy
           items={langItems}
@@ -108,6 +140,15 @@ export function ExecutiveMixCharts({
           title={t("langRankTitle")}
         />
       </div>
+      {certRank.length > 0 ? (
+        <RankBarsLazy
+          items={certRank}
+          periodDays={periodDays}
+          sampleSize={certBody?.sample_size ?? null}
+          title={tExec("topCertifications")}
+          valueLabel={t("colMentions")}
+        />
+      ) : null}
     </div>
   );
 }

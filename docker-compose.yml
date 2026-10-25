@@ -15,12 +15,14 @@ services:
       timeout: 5s
       retries: 10
 
-  redis:
-    image: redis:7-alpine
+  # Valkey (BSD-3) — Redis-protocol compatible; not Redis SSPL/RSAL.
+  # API still uses REDIS_URL / RATE_LIMIT_BACKEND=redis (RESP client).
+  valkey:
+    image: valkey/valkey:8-alpine
     ports:
       - "6380:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -40,16 +42,16 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-fmi}:${POSTGRES_PASSWORD:-fmi_dev_password_change_me}@db:5432/${POSTGRES_DB:-fmi}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://valkey:6379/0
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
-      redis:
+      valkey:
         condition: service_healthy
     healthcheck:
-      # Readiness (/readyz == /healthz): 503 when Postgres (or required Redis) is down
+      # Readiness (/readyz == /healthz): 503 when Postgres (or required Valkey via REDIS_URL) is down
       test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8000/readyz >/dev/null"]
       interval: 10s
       timeout: 5s

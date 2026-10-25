@@ -293,7 +293,10 @@ function TrendsDashboardInner() {
           {compareSort.sorted.length > 0 ? (
             <ScrollLoadFooter
               hasMore={compareWindow.hasMore}
+              isExpanded={compareWindow.isExpanded}
               onLoadMore={compareWindow.loadMore}
+              onExpandAll={compareWindow.expandAll}
+              onCollapse={compareWindow.collapse}
               shown={compareWindow.shown}
               total={compareWindow.total}
             />
@@ -367,7 +370,10 @@ function TrendsDashboardInner() {
           {trendSort.sorted.length > 0 ? (
             <ScrollLoadFooter
               hasMore={trendWindow.hasMore}
+              isExpanded={trendWindow.isExpanded}
               onLoadMore={trendWindow.loadMore}
+              onExpandAll={trendWindow.expandAll}
+              onCollapse={trendWindow.collapse}
               shown={trendWindow.shown}
               total={trendWindow.total}
             />

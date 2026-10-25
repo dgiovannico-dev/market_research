@@ -1,0 +1,59 @@
+{{- if and .Values.scheduler.enabled .Values.api.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "fmi.api.fullname" . }}-scheduler
+  labels:
+    {{- include "fmi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scheduler
+spec:
+  schedule: {{ .Values.scheduler.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: {{ .Values.scheduler.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.scheduler.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            {{- include "fmi.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: scheduler
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: tick
+              image: {{ include "fmi.image" (dict "global" .Values.global "repository" .Values.scheduler.image.repository "tag" .Values.scheduler.image.tag) }}
+              imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+              env:
+                - name: API_URL
+                  value: {{ printf "http://%s:%v" (include "fmi.api.fullname" .) .Values.api.service.port | quote }}
+                {{- if .Values.secrets.apiKey }}
+                - name: API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "fmi.secretName" . }}
+                      key: API_KEY
+                {{- end }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  HDR=""
+                  if [ -n "${API_KEY:-}" ]; then
+                    HDR="-H X-API-Key:${API_KEY}"
+                  fi
+                  # shellcheck disable=SC2086
+                  curl -sf -X POST $HDR "${API_URL}/api/v1/scheduler/run"
+                  echo
+                  echo "scheduler_tick OK against ${API_URL}"
+              securityContext:
+                # curlimages/curl runs as uid 100
+                runAsNonRoot: true
+                runAsUser: 100
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+
+{{- end }}

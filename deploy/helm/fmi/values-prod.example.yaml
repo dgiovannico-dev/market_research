@@ -1,0 +1,65 @@
+# Example production overrides for k3s.
+# Copy to a private path (not committed) and pass:
+#   helm upgrade --install fmi ./deploy/helm/fmi -n fmi --create-namespace \
+#     -f deploy/helm/fmi/values-prod.example.yaml \
+#     --set secrets.postgresPassword='…' \
+#     --set secrets.apiKey='…' \
+#     --set secrets.credentialsMasterKey='…'
+
+api:
+  replicaCount: 2
+  image:
+    repository: fmi-api
+    tag: "0.1.0"
+  pdb:
+    enabled: true
+    minAvailable: 1
+  env:
+    APP_ENV: production
+    ENABLE_SCHEDULER: "false"
+    RATE_LIMIT_BACKEND: redis
+    # Must match ingress frontend origin(s), comma-separated
+    API_CORS_ORIGINS: "https://fmi.example.com"
+  # Optional: ATS boards / connector CSV lists from .env.example
+  extraEnv: {}
+
+frontend:
+  replicaCount: 2
+  image:
+    repository: fmi-frontend
+    tag: "0.1.0"
+  publicApiUrl: "https://api.fmi.example.com"
+  pdb:
+    enabled: true
+    minAvailable: 1
+
+postgres:
+  persistence:
+    size: 50Gi
+
+valkey:
+  persistence:
+    size: 4Gi
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    frontend: fmi.example.com
+    api: api.fmi.example.com
+  tls:
+    enabled: true
+    secretName: fmi-tls
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt-prod
+
+scheduler:
+  enabled: true
+  schedule: "0 3 * * *"
+
+# Leave empty here — pass via --set / sealed-secrets / external secret operator
+secrets:
+  postgresPassword: ""
+  apiKey: ""
+  opsApiToken: ""
+  credentialsMasterKey: ""
