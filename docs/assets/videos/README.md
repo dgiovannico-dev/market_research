@@ -6,7 +6,7 @@ Screen recordings of the live Atlas UI at a **human-followable** pace (captions 
 |------|------|----------------|
 | [00-full-platform.mp4](00-full-platform.mp4) | All | Continuous walkthrough of every Atlas zone |
 | [01-explore.mp4](01-explore.mp4) | Explore | Executive, market scan, explorer, trends, skills, relations, rates, geo, languages, certs, Stack Compass |
-| [02-jobs-career.mp4](02-jobs-career.mp4) | Jobs | Job Explorer filters, local profile + gap analysis, Study Advisor plan, applications |
+| [02-jobs-career.mp4](02-jobs-career.mp4) | Jobs | Job Explorer filters, local profile + gap analysis, Study Advisor (busy hours, week calendar, plan card), applications |
 | [03-ops.mp4](03-ops.mp4) | Ops | Data quality KPIs, sources catalog / LLM panel (no credentialed runs), alerts |
 | [04-research.mp4](04-research.mp4) | Research | Focus intents, period report, assistant briefs |
 

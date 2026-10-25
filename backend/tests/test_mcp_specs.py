@@ -53,6 +53,20 @@ def test_propose_dashboard_from_prompt():
     assert validate_spec(spec).ok
 
 
+def test_propose_dashboard_skill_compare_avoids_global_rise_cool():
+    spec = propose_dashboard("Meglio java o python e perchè scegliere uno o l'altro?")
+    techs = [t.lower() for t in spec.filters.technologies]
+    assert "java" in techs and "python" in techs
+    widget_ids = {w.id for w in spec.widgets}
+    assert "chart_compare_trends" in widget_ids
+    assert "chart_trends" not in widget_ids
+    assert "chart_countries" not in widget_ids
+    compare_w = next(w for w in spec.widgets if w.id == "chart_compare_trends")
+    assert compare_w.params.get("focus_technologies")
+    assert "vs" in (spec.title or "").lower() or "compare" in (spec.title or "").lower()
+    assert validate_spec(spec).ok
+
+
 def test_propose_report_observed_only():
     spec = propose_report("Report settimanale rates e skill gaps")
     assert spec.narrative_policy == "observed_only"

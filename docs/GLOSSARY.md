@@ -16,6 +16,8 @@ Ubiquitous language for product, ADRs, and code. One meaning per term in this sy
 | **`job_intent_matches`** | Normative provenance Job ↔ intent (not sole `jobs.query_id`) | ADR-007 |
 | **Lens** | Corpus filter for analytics/UI/MCP: `market` \| `focus` \| `compare` | ADR-007 |
 | **Demand Compass** | Rising/cooling, geo, evidence coach — not a market oracle | ADR-007 |
+| **Study Advisor** | Evidence-backed weekly study plan; busy slots + ICS import; WLB calendar | manuals/CAREER |
+| **Compare propose** | Skill-vs-skill DashboardSpec (RankBars + deterministic narrative) | manuals/RESEARCH |
 | **Classification mode** | `rules` \| `hybrid` \| `llm` | [ADR-002](decisions/ADR-002-classification-modes.md) |
 | **View mode** | Presentation only: `guided` \| `trends_only` — APIs stay evidence-first | [ADR-004](decisions/ADR-004-dashboard-modes.md) |
 | **DashboardSpec / ReportSpec** | Validated LLM/MCP outputs; not free-form SQL to UI | [ADR-006](decisions/ADR-006-mcp-schema-driven-analytics.md) |

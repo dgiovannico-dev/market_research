@@ -12,9 +12,9 @@ Start the app with [ops/LOCAL.md](../ops/LOCAL.md), then open `http://localhost:
 |-------|----------|--------|
 | [Full platform](../assets/videos/00-full-platform.mp4) | ~10+ min | Every Atlas zone; each page scrolled top→bottom |
 | [Explore](../assets/videos/01-explore.mp4) | ~5 min | Executive → Stack; full-page scroll on every screen |
-| [Jobs & career](../assets/videos/02-jobs-career.mp4) | ~2.5 min | Job Explorer, profile + gaps, Study Advisor, applications |
+| [Jobs & career](../assets/videos/02-jobs-career.mp4) | ~3 min | Job Explorer, profile + gaps, Study Advisor calendar + plan, applications |
 | [Ops](../assets/videos/03-ops.mp4) | ~3 min | Data quality, sources catalog, alerts (no credentialed runs) |
-| [Research](../assets/videos/04-research.mp4) | ~1.5 min | Focus intents, report, assistant |
+| [Research](../assets/videos/04-research.mp4) | ~2 min | Focus intents, report, assistant propose (skill compare) |
 
 <video controls width="100%" src="../assets/videos/00-full-platform.mp4">
   <a href="../assets/videos/00-full-platform.mp4">Download full platform tour (MP4)</a>
@@ -96,7 +96,7 @@ Stored in **browser localStorage** (not multi-device sync). Feeds Stack and Lear
 
 ### 9. Learn — Study Advisor
 
-Turns Stack evidence into a structured study plan (optional LLM refine when configured).
+Turns Stack evidence into a structured study plan: busy hours + optional ICS calendar sync, Google-style week grid with work–life balance spread, human-readable checkpoints (optional LLM refine when configured).
 
 ![Learn](../assets/screenshots/09-learn.png)
 

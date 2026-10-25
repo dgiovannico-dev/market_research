@@ -72,8 +72,22 @@ def parse_intent_from_prompt(prompt: str, base: IntentHints | None = None) -> In
         hints.include_quality = True
     if "skill gap" in lower or "profilo" in lower or "profile" in lower:
         hints.include_profile_gaps = True
+    compare_cue = bool(
+        re.search(
+            r"\b(vs\.?|versus|meglio|oppure|oppure\s+scegliere|better|prefer|scegliere|"
+            r"confront[ao]|compare|which\s+(?:is\s+)?better|o\s+il)\b",
+            lower,
+        )
+        or (" o " in f" {lower} " and len(techs) >= 2)
+    )
+    if compare_cue and len(techs) >= 2:
+        hints.compare_mode = True
     if not hints.title:
-        hints.title = (text[:80] + "…") if len(text) > 80 else (text or "Observed market view")
+        if hints.compare_mode and len(techs) >= 2:
+            pair = " vs ".join(t.title() for t in techs[:2])
+            hints.title = f"{pair} — observed compare"
+        else:
+            hints.title = (text[:80] + "…") if len(text) > 80 else (text or "Observed market view")
     return hints
 
 
@@ -89,29 +103,55 @@ def propose_dashboard(intent: IntentHints | dict | str) -> DashboardSpec:
         DashboardWidget(id="kpi_unique", type="kpi", metric_key="unique_jobs_observed"),
         DashboardWidget(id="kpi_remote", type="kpi", metric_key="remote_jobs_observed"),
     ]
-    if hints.include_trends:
+    compare = bool(hints.compare_mode and len(hints.technologies) >= 2)
+    if compare:
+        # Skill-vs-skill: volume/trends for the named techs — not the global rise/cool board.
         widgets.append(
-            DashboardWidget(id="chart_trends", type="chart", metric_key="technology_trends")
+            DashboardWidget(
+                id="chart_compare_trends",
+                type="chart",
+                metric_key="technology_trends",
+                params={"focus_technologies": hints.technologies[:4]},
+            )
         )
-    if hints.include_rates:
-        widgets.append(
-            DashboardWidget(id="table_rates", type="table", metric_key="rates_distribution")
-        )
-    widgets.append(
-        DashboardWidget(id="chart_countries", type="chart", metric_key="countries_breakdown")
-    )
-    if hints.technologies:
         widgets.append(
             DashboardWidget(
                 id="cooccur",
                 type="table",
                 metric_key="skill_cooccurrence",
-                params={"seed": hints.technologies[:3]},
+                params={"seed": hints.technologies[:2]},
             )
         )
+    else:
+        if hints.include_trends:
+            widgets.append(
+                DashboardWidget(id="chart_trends", type="chart", metric_key="technology_trends")
+            )
+        if hints.include_rates:
+            widgets.append(
+                DashboardWidget(id="table_rates", type="table", metric_key="rates_distribution")
+            )
+        widgets.append(
+            DashboardWidget(id="chart_countries", type="chart", metric_key="countries_breakdown")
+        )
+        if hints.technologies:
+            widgets.append(
+                DashboardWidget(
+                    id="cooccur",
+                    type="table",
+                    metric_key="skill_cooccurrence",
+                    params={"seed": hints.technologies[:3]},
+                )
+            )
     if hints.include_quality and hints.view_mode == "guided":
         widgets.append(DashboardWidget(id="quality", type="quality", metric_key="data_quality"))
 
+    notes = ["Proposed from intent; ground with get_observed_counts before presenting."]
+    if compare:
+        notes.append(
+            "Compare mode: chart focuses on named technologies; "
+            "do not substitute the global rising/cooling board."
+        )
     spec = DashboardSpec(
         title=hints.title or "Observed market dashboard",
         period_days=hints.period_days,
@@ -124,7 +164,7 @@ def propose_dashboard(intent: IntentHints | dict | str) -> DashboardSpec:
                 "GET /api/v1/dashboard/summary",
                 "GET /api/v1/market/trends",
             ],
-            "notes": ["Proposed from intent; ground with get_observed_counts before presenting."],
+            "notes": notes,
         },
     )
     result = validate_spec(spec)

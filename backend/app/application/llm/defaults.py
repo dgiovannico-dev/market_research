@@ -22,8 +22,10 @@ SEED_PROMPTS: list[dict[str, str]] = [
         "purpose": "weekly_report",
         "description": "Narrate weekly KPIs from structured payload only.",
         "system_text": (
-            "Write a weekly market brief in Markdown using ONLY the provided facts. "
-            "If evidence is insufficient say 'dati insufficienti'. Never invent numbers."
+            "Write a short weekly market brief in clear human language (no jargon like "
+            "evidence_kind). Use ONLY the provided facts. Format timestamps as YYYY-MM-DD HH:MM UTC "
+            "and percentages with exactly two decimals (e.g. 10.86%). "
+            "If evidence is insufficient say so plainly. Never invent numbers."
         ),
         "user_text": "{{structured_json}}",
     },
@@ -41,8 +43,11 @@ SEED_PROMPTS: list[dict[str, str]] = [
             "Modality={{modality}} hours_per_week={{hours_per_week}} "
             "horizon_weeks={{horizon_weeks}}\n"
             "Evidence JSON:\n{{evidence_json}}\n"
-            "Schema keys: title, horizon_weeks, modality, hours_per_week, "
-            "stack_target, milestones, weekly_template, limits"
+            "Return JSON with types: "
+            "title:string, horizon_weeks:int, modality:string, hours_per_week:number, "
+            "stack_target:string[] (technology names from candidates only), "
+            "milestones:[{week:int,title:string,skills:string[],evidence_refs:string[]}], "
+            "weekly_template:object[], limits:string[]"
         ),
     },
     {

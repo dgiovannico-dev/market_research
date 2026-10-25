@@ -11,6 +11,15 @@ export type StudyMilestone = {
   hours?: number | null;
 };
 
+export type StudyCalendarSlot = {
+  weekday: string;
+  start: string;
+  end: string;
+  label?: string;
+  kind?: "study" | "busy" | string;
+  minutes?: number;
+};
+
 export type StudyPlan = {
   title: string;
   horizon_weeks: number;
@@ -18,7 +27,7 @@ export type StudyPlan = {
   hours_per_week: number;
   stack_target: string[];
   milestones: StudyMilestone[];
-  weekly_template: Array<Record<string, unknown>>;
+  weekly_template: StudyCalendarSlot[];
   limits: string[];
   source: string;
 };

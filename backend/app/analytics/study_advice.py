@@ -10,9 +10,27 @@ from sqlalchemy.orm import Session
 
 from app.adapters.driven.llm.provider import get_llm_provider
 from app.analytics.learning_candidates import learning_candidates
+from app.analytics.study_llm_payload import (
+    coerce_llm_plan_payload,
+    compact_evidence_for_llm,
+)
+from app.analytics.study_schedule import build_weekly_schedule, normalize_busy_slots
 from app.application.llm.prompts import resolve_prompt
 from app.application.llm.runtime_config import resolve_llm_settings
 from app.core.config import get_settings
+
+# Re-export for tests / callers that import from study_advice
+__all__ = [
+    "StudyMilestone",
+    "StudyPlan",
+    "build_evidence_pack",
+    "coerce_llm_plan_payload",
+    "compact_evidence_for_llm",
+    "generate_study_plan",
+    "refine_study_plan",
+    "stub_study_plan",
+    "validate_plan_against_evidence",
+]
 
 Modality = Literal["employed_part_time", "freelance_full_time", "intensive"]
 
@@ -59,6 +77,25 @@ class StudyPlan(BaseModel):
         return v if v is not None else []
 
 
+def _attach_calendar(plan: StudyPlan, evidence: dict[str, Any]) -> StudyPlan:
+    """Always rebuild weekly_template from hours + busy slots (ignore LLM noise)."""
+    schedule = build_weekly_schedule(
+        hours_per_week=float(evidence.get("hours_per_week") or plan.hours_per_week),
+        modality=evidence.get("modality") or plan.modality,
+        busy_slots=evidence.get("busy_slots"),
+    )
+    limits = list(plan.limits or [])
+    for note in schedule.get("notes") or []:
+        if note not in limits:
+            limits.append(note)
+    return plan.model_copy(
+        update={
+            "weekly_template": list(schedule.get("weekly_template") or []),
+            "limits": limits,
+        }
+    )
+
+
 def build_evidence_pack(
     db: Session,
     *,
@@ -72,6 +109,7 @@ def build_evidence_pack(
     lens: Optional[str] = None,
     query_ids: Optional[Sequence[int]] = None,
     min_evidence: Optional[str] = None,
+    busy_slots: Optional[list[dict[str, Any]]] = None,
 ) -> dict[str, Any]:
     owned = [s.strip() for s in skills if s and str(s).strip()]
     compass = learning_candidates(
@@ -101,12 +139,14 @@ def build_evidence_pack(
         limits = list(limits) + [
             "Evidence thin or profile incomplete; plan will be stub / coverage-only."
         ]
+    busy = normalize_busy_slots(busy_slots)
     return {
         "modality": modality,
         "hours_per_week": hours_per_week,
         "horizon_weeks": horizon_weeks,
         "skills": owned,
         "certifications": list(certifications or []),
+        "busy_slots": busy,
         "coverage": coverage,
         "candidates": candidates[:12],
         "related_certifications": compass.get("related_certifications")
@@ -194,6 +234,12 @@ def stub_study_plan(evidence: dict[str, Any]) -> StudyPlan:
         limits = limits + ["insufficient_data: stub plan from observed candidates only"]
     if not stack:
         limits = limits + ["No learning candidates; empty stack_target"]
+    schedule = build_weekly_schedule(
+        hours_per_week=hours,
+        modality=modality,
+        busy_slots=evidence.get("busy_slots"),
+    )
+    limits = limits + list(schedule.get("notes") or [])
     return StudyPlan(
         title="Study plan (deterministic stub)",
         horizon_weeks=horizon,
@@ -201,7 +247,7 @@ def stub_study_plan(evidence: dict[str, Any]) -> StudyPlan:
         hours_per_week=hours,
         stack_target=stack,
         milestones=milestones,
-        weekly_template=list(_WEEKLY_TEMPLATES.get(modality, _WEEKLY_TEMPLATES["employed_part_time"])),
+        weekly_template=list(schedule.get("weekly_template") or []),
         limits=limits,
         source="stub",
     )
@@ -229,17 +275,14 @@ def validate_plan_against_evidence(plan: StudyPlan, evidence: dict[str, Any]) ->
     dropped = set(plan.stack_target) - set(cleaned_stack)
     if dropped:
         limits.append(f"Dropped ungrounded stack items: {sorted(dropped)}")
-    template = plan.weekly_template or list(
-        _WEEKLY_TEMPLATES.get(plan.modality, _WEEKLY_TEMPLATES["employed_part_time"])
-    )
-    return plan.model_copy(
+    cleaned = plan.model_copy(
         update={
             "stack_target": cleaned_stack,
             "milestones": cleaned_ms,
-            "weekly_template": template,
             "limits": limits,
         }
     )
+    return _attach_calendar(cleaned, evidence)
 
 
 async def generate_study_plan(db: Session, evidence: dict[str, Any]) -> dict[str, Any]:
@@ -265,7 +308,7 @@ async def generate_study_plan(db: Session, evidence: dict[str, Any]) -> dict[str
             "status": "ok",
             "mode": "stub",
             "reason": reason,
-            "plan": stub.model_dump(),
+            "plan": _attach_calendar(stub, evidence).model_dump(),
             "evidence": evidence,
             "llm_health": health,
         }
@@ -278,7 +321,7 @@ async def generate_study_plan(db: Session, evidence: dict[str, Any]) -> dict[str
                 "modality": str(evidence.get("modality")),
                 "hours_per_week": str(evidence.get("hours_per_week")),
                 "horizon_weeks": str(evidence.get("horizon_weeks")),
-                "evidence_json": json.dumps(evidence, default=str)[:20000],
+                "evidence_json": compact_evidence_for_llm(evidence),
             },
         )
         raw = await provider.chat(
@@ -289,12 +332,13 @@ async def generate_study_plan(db: Session, evidence: dict[str, Any]) -> dict[str
             response_json=True,
         )
         data = json.loads(raw or "{}")
-        data.setdefault("modality", evidence.get("modality"))
-        data.setdefault("hours_per_week", evidence.get("hours_per_week"))
-        data.setdefault("horizon_weeks", evidence.get("horizon_weeks"))
+        if not isinstance(data, dict):
+            raise ValueError("LLM study plan was not a JSON object")
+        data = coerce_llm_plan_payload(data, evidence=evidence)
         data["source"] = "llm"
         plan = StudyPlan.model_validate(data)
         plan = validate_plan_against_evidence(plan, evidence)
+        plan = _attach_calendar(plan, evidence)
         return {
             "status": "ok",
             "mode": "llm",
@@ -304,8 +348,9 @@ async def generate_study_plan(db: Session, evidence: dict[str, Any]) -> dict[str
             "llm_health": health,
         }
     except (ValidationError, json.JSONDecodeError, Exception) as exc:  # noqa: BLE001
-        fallback = stub.model_copy(
-            update={"limits": stub.limits + [f"LLM fallback: {exc}"]}
+        fallback = _attach_calendar(
+            stub.model_copy(update={"limits": stub.limits + [f"LLM fallback: {exc}"]}),
+            evidence,
         )
         return {
             "status": "ok",
@@ -345,9 +390,9 @@ async def refine_study_plan(
             db,
             slug="study_refine",
             variables={
-                "plan_json": json.dumps(plan, default=str)[:12000],
-                "evidence_json": json.dumps(evidence, default=str)[:12000],
-                "user_message": user_message[:2000],
+                "plan_json": json.dumps(plan, default=str, separators=(",", ":"))[:4000],
+                "evidence_json": compact_evidence_for_llm(evidence, max_chars=3500),
+                "user_message": user_message[:500],
             },
         )
         raw = await provider.chat(

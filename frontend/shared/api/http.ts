@@ -54,4 +54,32 @@ export async function getJSON<T>(path: string): Promise<T> {
   return requestJSON<T>(path);
 }
 
+/** Binary download (e.g. PDF). Returns blob + optional filename from Content-Disposition. */
+export async function requestBlob(
+  path: string,
+  init?: RequestInit,
+): Promise<{ blob: Blob; filename: string | null }> {
+  const base = resolveApiBase();
+  const headers = new Headers(init?.headers);
+  if (typeof window !== "undefined") {
+    for (const [k, v] of Object.entries(authHeaders())) {
+      if (!headers.has(k)) headers.set(k, v);
+    }
+  }
+  const res = await fetch(`${base}${path}`, { cache: "no-store", ...init, headers });
+  if (!res.ok) {
+    let detail: string | undefined;
+    try {
+      const body = (await res.json()) as { detail?: string };
+      if (typeof body.detail === "string") detail = body.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiRequestError(path, res.status, detail);
+  }
+  const cd = res.headers.get("Content-Disposition") || "";
+  const match = /filename="([^"]+)"/i.exec(cd);
+  return { blob: await res.blob(), filename: match?.[1] ?? null };
+}
+
 export { API_URL, resolveApiBase };

@@ -1,3 +1,4 @@
+export { Markdown } from "./Markdown";
 export { MetricLegend } from "./MetricLegend";
 export { MultiSelectFacet } from "./MultiSelectFacet";
 export { ScrollLoadFooter } from "./ScrollLoadFooter";

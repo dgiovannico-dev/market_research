@@ -44,6 +44,17 @@ def test_assistant_propose_report_materialize(client):
     assert "eur" not in narrative or "undeclared" in narrative or "insufficient" in narrative
 
 
+def test_assistant_report_pdf(client):
+    res = client.post(
+        "/api/v1/assistant/report-pdf",
+        json={"prompt": "weekly rates report", "locale": "en"},
+    )
+    assert res.status_code == 200, res.text
+    assert res.headers.get("content-type", "").startswith("application/pdf")
+    assert res.content[:4] == b"%PDF"
+    assert "filename=" in (res.headers.get("content-disposition") or "")
+
+
 def test_assistant_accepts_locale(client):
     """Optional locale en|it must validate (not 422) and echo in meta."""
     propose = client.post(
@@ -69,8 +80,11 @@ def test_assistant_accepts_locale(client):
     )
     assert brief.status_code == 200, brief.text
     assert brief.json()["meta"]["locale"] == "it"
-    assert brief.json()["meta"]["narrative_locale"] == "en"
+    assert brief.json()["meta"]["narrative_locale"] == "it"
     assert brief.json()["brief"].get("countries") in (None, ["IT", "CH"])
+    narr = brief.json()["brief"].get("narrative") or ""
+    assert "n=" in narr
+    assert "Lens=" not in narr
 
     brief_default = client.post(
         "/api/v1/assistant/brief",

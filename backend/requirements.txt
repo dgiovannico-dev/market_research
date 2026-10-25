@@ -25,5 +25,6 @@ pytest-asyncio==0.26.0
 httpx==0.28.1
 ruff==0.11.5
 mcp==1.9.4
+fpdf2==2.8.3
 # Keep FastAPI-compatible Starlette (mcp may pull a newer starlette transitively)
 starlette>=0.40.0,<0.47.0

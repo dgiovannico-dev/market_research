@@ -69,28 +69,33 @@ flowchart TD
 
 ## Assistant (`/assistant`)
 
-**Purpose:** Demand Compass LLM surfaces—structured briefs over existing analytics plus **proposed watches** you must explicitly accept.
+**Purpose:** Demand Compass LLM surfaces—structured briefs over existing analytics, **prompt → dashboard/report propose**, plus **proposed watches** you must explicitly accept.
 
 ![Assistant](../assets/screenshots/07-assistant.png)
 
 ### What you'll see
 
 - **Demand Compass briefs** — narratives tied to API payloads (sample sizes, limits). Types include market context, focus vs market, rising/cooling technology stories, and adjacent skill stories where implemented.
+- **Prompt → dashboard / report** — same propose/validate path as MCP analytics. Specs are anchored to observed metrics (rates are never invented).
+  - Skill-vs-skill questions (e.g. “Better Java or Python?”) set **compare mode**: title like `Java vs Python — observed compare`, a **ranked mentions** chart for the named skills (not the global rising/cooling board), and a deterministic narrative with real mention counts.
+- Live chart preview from the proposed `DashboardSpec`.
 - **Propose watches** — candidate discovery or focus intents **not** auto-created.
 - Lens, period, and country context from dashboard prefs and URL params where wired.
 - Errors from misconfigured LLM in brief sections—not fabricated KPIs.
 
 ### How to use
 
-1. Set lens, period, and countries to match the question before reading briefs.
+1. Set lens, period, and countries to match the question before reading briefs or proposing.
 2. In **guided** mode, read disclaimers and `lens_sample_size`.
-3. For **proposed watches**, click **Accept** only when you want a new intent; acceptance calls `acceptResearchWatch` (name, query text, kind).
-4. After accepting, verify intent lists on **Market scan** and **My focus**.
-5. Declining is implicit (ignore)—there is no silent enrollment.
+3. For compare questions, type both skills and a cue (`vs`, `meglio`, `better`, …) → **Propose** → read RankBars + plain-language summary.
+4. For **proposed watches**, click **Accept** only when you want a new intent; acceptance calls `acceptResearchWatch` (name, query text, kind).
+5. After accepting, verify intent lists on **Market scan** and **My focus**.
+6. Declining is implicit (ignore)—there is no silent enrollment.
 
 ### Common pitfalls
 
 - Treating brief prose as independent research—it wraps the same observed analytics as Explore.
+- Expecting a rising/cooling board when you asked A vs B—compare mode intentionally shows skill mention bars instead.
 - Accepting watches without checking for duplicate query text on focus/discovery lists.
 - Assuming Assistant fixes thin **market** lens data—enable discovery probes and check [ADMIN.md](./ADMIN.md) Quality first.
 

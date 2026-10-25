@@ -1,3 +1,9 @@
+import {
+  normalizeCountryCode,
+  normalizeCurrency,
+  normalizeRateUnit,
+} from "./profileOptions";
+
 export type LocalUserProfile = {
   display_name: string;
   residence_country: string;
@@ -28,9 +34,17 @@ export function loadLocalProfile(): LocalUserProfile {
     const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
     if (!raw) return { ...DEFAULT_LOCAL_PROFILE };
     const parsed = JSON.parse(raw) as Partial<LocalUserProfile>;
+    const amount =
+      parsed.target_rate_amount == null || parsed.target_rate_amount === ""
+        ? ""
+        : String(parsed.target_rate_amount).replace(",", ".");
     return {
       ...DEFAULT_LOCAL_PROFILE,
       ...parsed,
+      residence_country: normalizeCountryCode(String(parsed.residence_country ?? "")),
+      rate_currency: normalizeCurrency(String(parsed.rate_currency ?? "EUR")),
+      rate_unit: normalizeRateUnit(String(parsed.rate_unit ?? "day")),
+      target_rate_amount: amount === "" || Number.isNaN(Number(amount)) ? "" : amount,
       skills: Array.isArray(parsed.skills) ? parsed.skills.map(String) : [],
       certifications: Array.isArray(parsed.certifications)
         ? parsed.certifications.map(String)

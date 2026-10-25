@@ -9,19 +9,59 @@ import { useDashboardCountries } from "@/features/country-filter";
 import { WatchCandidates } from "@/features/propose-watch";
 import type { ProposedWatchCandidate } from "@/entities/assistant";
 import {
+  loadBusySlots,
   loadStudyPlan,
+  saveBusySlots,
   saveStudyPlan,
   studyAdvisorApi,
   studyPlanToIcs,
+  type BusySlot,
   type StudyModality,
   type StudyPlan,
 } from "@/entities/study-advisor";
+import { BusySlotsEditor } from "./BusySlotsEditor";
+import { CalendarFeedSync } from "./CalendarFeedSync";
+import { StudyPlanCard } from "./StudyPlanCard";
+import { WeekCalendar } from "./WeekCalendar";
 
 const MODALITIES: StudyModality[] = [
   "employed_part_time",
   "freelance_full_time",
   "intensive",
 ];
+
+function humanLimit(
+  raw: string,
+  t: (key: string, values?: Record<string, string>) => string,
+): string {
+  const s = raw.trim();
+  if (/learning candidates combine/i.test(s)) return t("limitCorpus");
+  if (/gap-only candidate/i.test(s)) return t("limitGapOnly");
+  if (/co-occurrence and gap scores/i.test(s)) return t("limitScores");
+  if (s === "schedule_no_window" || /no free study window/i.test(s)) {
+    return t("limitNoWindow");
+  }
+  const wlb = /^schedule_wlb_days:(\d+)$/.exec(s);
+  if (wlb) {
+    return t("limitWlb", { days: wlb[1] });
+  }
+  const partial = /^schedule_partial:(\d+):(\d+)$/.exec(s);
+  if (partial) {
+    const got = Number(partial[1]);
+    const want = Number(partial[2]);
+    return t("limitPartial", {
+      gotH: String(Math.floor(got / 60)),
+      gotM: String(got % 60).padStart(2, "0"),
+      wantH: String(Math.floor(want / 60)),
+    });
+  }
+  if (/could only fit about/i.test(s)) return s;
+  if (/dropped ungrounded/i.test(s)) return t("limitDropped");
+  if (/llm fallback/i.test(s)) return t("limitLlmFallback");
+  if (/insufficient_data/i.test(s)) return t("limitThin");
+  if (/no learning candidates/i.test(s)) return t("limitNoCandidates");
+  return s;
+}
 
 export function StudyAdvisorDashboard() {
   const t = useTranslations("studyAdvisor");
@@ -33,9 +73,9 @@ export function StudyAdvisorDashboard() {
   const [hours, setHours] = useState(6);
   const [modality, setModality] = useState<StudyModality>("employed_part_time");
   const [horizon, setHorizon] = useState(8);
+  const [busySlots, setBusySlots] = useState<BusySlot[]>([]);
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [evidence, setEvidence] = useState<Record<string, unknown> | null>(null);
-  const [mode, setMode] = useState<string>("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [refineMsg, setRefineMsg] = useState("");
@@ -44,6 +84,7 @@ export function StudyAdvisorDashboard() {
   );
 
   useEffect(() => {
+    setBusySlots(loadBusySlots());
     const stored = loadStudyPlan();
     if (stored?.plan) {
       setPlan(stored.plan);
@@ -53,6 +94,11 @@ export function StudyAdvisorDashboard() {
       setHorizon(stored.plan.horizon_weeks);
     }
   }, []);
+
+  function updateBusy(next: BusySlot[]) {
+    setBusySlots(next);
+    saveBusySlots(next);
+  }
 
   if (!prefsReady || !profileReady) {
     return <p className="text-sm text-[var(--muted)]">{t("loading")}</p>;
@@ -66,7 +112,7 @@ export function StudyAdvisorDashboard() {
     );
   }
 
-  async function generate() {
+  async function generate(slots: BusySlot[] = busySlots) {
     setBusy(true);
     setError("");
     try {
@@ -78,10 +124,10 @@ export function StudyAdvisorDashboard() {
         horizon_weeks: horizon,
         country_code: countries.length ? countries.join(",") : undefined,
         days: Math.min(Math.max(prefs.period_days, 7), 365),
+        busy_slots: slots,
       });
       setPlan(res.plan);
       setEvidence(res.evidence);
-      setMode(res.mode + (res.reason ? ` (${res.reason})` : ""));
       saveStudyPlan(res.plan, res.evidence);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("failed"));
@@ -97,13 +143,34 @@ export function StudyAdvisorDashboard() {
     try {
       const res = await studyAdvisorApi.refine({
         plan,
-        evidence,
+        evidence: { ...evidence, busy_slots: busySlots },
         message: refineMsg.trim(),
       });
       if (res.plan) {
-        setPlan(res.plan);
-        saveStudyPlan(res.plan, evidence);
-        setMode(res.mode || "refine");
+        const refreshed = await studyAdvisorApi.plan({
+          skills: profile.skills,
+          certifications: profile.certifications,
+          hours_per_week: res.plan.hours_per_week,
+          modality: res.plan.modality,
+          horizon_weeks: res.plan.horizon_weeks,
+          country_code: countries.length ? countries.join(",") : undefined,
+          days: Math.min(Math.max(prefs.period_days, 7), 365),
+          busy_slots: busySlots,
+        });
+        const merged: StudyPlan = {
+          ...refreshed.plan,
+          title: res.plan.title || refreshed.plan.title,
+          stack_target: res.plan.stack_target?.length
+            ? res.plan.stack_target
+            : refreshed.plan.stack_target,
+          milestones: res.plan.milestones?.length
+            ? res.plan.milestones
+            : refreshed.plan.milestones,
+          weekly_template: refreshed.plan.weekly_template,
+        };
+        setPlan(merged);
+        setEvidence(refreshed.evidence);
+        saveStudyPlan(merged, refreshed.evidence);
         setRefineMsg("");
       }
       if (res.status === "skipped") {
@@ -145,6 +212,10 @@ export function StudyAdvisorDashboard() {
       ];
     });
   }
+
+  const limits = (plan?.limits || [])
+    .map((l) => humanLimit(l, t))
+    .filter((l, i, arr) => l && arr.indexOf(l) === i);
 
   return (
     <div className="space-y-6">
@@ -207,6 +278,15 @@ export function StudyAdvisorDashboard() {
         </label>
       </section>
 
+      <BusySlotsEditor slots={busySlots} onChange={updateBusy} />
+
+      <CalendarFeedSync
+        busySlots={busySlots}
+        onBusyChange={updateBusy}
+        onReplan={(slots) => generate(slots)}
+        disabled={busy || profile.skills.length < 1}
+      />
+
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -237,88 +317,23 @@ export function StudyAdvisorDashboard() {
       </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {mode ? (
-        <p className="text-xs text-[var(--muted)]">
-          {t("modeLine", { mode })}
-        </p>
-      ) : null}
 
       {plan ? (
-        <section className="space-y-4 rounded-xl border border-[var(--line)] bg-[var(--card)] p-4">
-          <h2 className="font-semibold">{plan.title}</h2>
-          <p className="text-sm text-[var(--muted)]">
-            {t("planMeta", {
-              weeks: String(plan.horizon_weeks),
-              hours: String(plan.hours_per_week),
-              source: plan.source,
-            })}
-          </p>
-          <div>
-            <h3 className="text-sm font-medium">{t("stackTarget")}</h3>
-            <ul className="mt-1 flex flex-wrap gap-2">
-              {plan.stack_target.map((tech) => (
-                <li key={tech}>
-                  <button
-                    type="button"
-                    className="rounded-full border border-[var(--line)] px-3 py-1 text-xs hover:border-[var(--signal)]"
-                    onClick={() => suggestWatch(tech)}
-                  >
-                    {tech} · {t("suggestWatch")}
-                  </button>
-                </li>
-              ))}
-              {plan.stack_target.length === 0 ? (
-                <li className="text-xs text-[var(--muted)]">{t("emptyStack")}</li>
-              ) : null}
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium">{t("milestones")}</h3>
-            <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm">
-              {plan.milestones.map((m, i) => (
-                <li key={`${m.week}-${i}`}>
-                  <span className="font-medium">
-                    W{m.week}: {m.title}
-                  </span>
-                  <span className="text-[var(--muted)]">
-                    {" "}
-                    — {(m.skills || []).join(", ")}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-          {plan.limits?.length ? (
-            <div>
-              <h3 className="text-sm font-medium">{t("limits")}</h3>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-[var(--muted)]">
-                {plan.limits.map((l) => (
-                  <li key={l}>{l}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          <div className="space-y-2 border-t border-[var(--line)] pt-3">
-            <label className="block text-sm">
-              {t("refineLabel")}
-              <input
-                className="mt-1 w-full rounded border border-[var(--line)] bg-transparent px-2 py-1"
-                value={refineMsg}
-                onChange={(e) => setRefineMsg(e.target.value)}
-                placeholder={t("refinePh")}
-              />
-            </label>
-            <button
-              type="button"
-              disabled={busy || !refineMsg.trim()}
-              onClick={() => void refine()}
-              className="rounded border border-[var(--line)] px-3 py-2 text-sm hover:border-[var(--signal)] disabled:opacity-50"
-            >
-              {t("refine")}
-            </button>
-          </div>
-        </section>
+        <>
+          <WeekCalendar
+            studySlots={plan.weekly_template || []}
+            busySlots={busySlots}
+          />
+          <StudyPlanCard
+            plan={plan}
+            limits={limits}
+            refineMsg={refineMsg}
+            onRefineMsg={setRefineMsg}
+            onRefine={() => void refine()}
+            onSuggestWatch={suggestWatch}
+            busy={busy}
+          />
+        </>
       ) : null}
 
       {watchCandidates.length > 0 ? (

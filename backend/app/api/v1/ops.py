@@ -95,13 +95,19 @@ async def fx_rates(
 
 
 @router.get("/reports/weekly")
-async def weekly_report(db: Session = Depends(get_db)) -> dict[str, Any]:
-    return await build_weekly_report(db)
+async def weekly_report(
+    locale: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    return await build_weekly_report(db, locale=locale)
 
 
 @router.post("/reports/generate")
-async def generate_report(db: Session = Depends(get_db)) -> dict[str, Any]:
-    return await build_weekly_report(db)
+async def generate_report(
+    locale: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    return await build_weekly_report(db, locale=locale)
 
 
 @router.post("/llm/classification/run")

@@ -84,26 +84,42 @@ function DemandCompassInner() {
         </div>
 
         <div
-          className="flex flex-wrap gap-2"
+          className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
           role="group"
           aria-label={t("briefChipsAria")}
         >
           {ASSISTANT_BRIEF_TYPES.map((briefType) => {
             const selected = active === briefType;
+            const purposeKey =
+              `briefPurpose_${briefType}` as
+                | "briefPurpose_rising_cooling"
+                | "briefPurpose_where_demand"
+                | "briefPurpose_adjacent"
+                | "briefPurpose_focus_vs_market"
+                | "briefPurpose_suggest_watches";
             return (
               <button
                 key={briefType}
                 type="button"
                 disabled={busy}
                 aria-pressed={selected}
-                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-200 disabled:opacity-50 ${
+                className={`rounded-lg border px-3 py-3 text-left transition-colors duration-200 disabled:opacity-50 ${
                   selected
                     ? "border-[var(--signal)] bg-[var(--signal)] text-white"
-                    : "border-[var(--line)] text-[var(--ink)] hover:border-[var(--signal)] hover:text-[var(--signal)]"
+                    : "border-[var(--line)] text-[var(--ink)] hover:border-[var(--signal)]"
                 }`}
                 onClick={() => void runBrief(briefType)}
               >
-                {tCompass(briefChipKey(briefType))}
+                <span className="block text-sm font-semibold">
+                  {tCompass(briefChipKey(briefType))}
+                </span>
+                <span
+                  className={`mt-1 block text-xs leading-snug ${
+                    selected ? "text-white/85" : "text-[var(--muted)]"
+                  }`}
+                >
+                  {t(purposeKey)}
+                </span>
               </button>
             );
           })}

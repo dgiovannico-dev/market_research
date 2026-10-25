@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.analytics.learning_candidates import learning_candidates
 from app.analytics.outcomes import outcomes_summary
 from app.analytics.positioning import recommendations, skill_gaps
+from app.analytics.ics_busy import busy_slots_from_ics_url
 from app.analytics.study_advice import (
     build_evidence_pack,
     generate_study_plan,
@@ -196,6 +197,13 @@ def profile_learning_candidates(
     )
 
 
+class BusySlotBody(BaseModel):
+    weekday: str
+    start: str
+    end: str
+    label: Optional[str] = None
+
+
 class StudyEvidenceBody(BaseModel):
     skills: list[str] = Field(default_factory=list)
     certifications: Optional[list[str]] = None
@@ -204,6 +212,7 @@ class StudyEvidenceBody(BaseModel):
     horizon_weeks: int = Field(default=8, ge=1, le=52)
     country_code: Optional[str] = None
     days: Optional[int] = None
+    busy_slots: Optional[list[BusySlotBody]] = None
 
 
 class StudyPlanBody(StudyEvidenceBody):
@@ -232,6 +241,7 @@ def study_advice_evidence(
     ):
         raise HTTPException(400, "invalid modality")
     lens_name, qids = parse_lens_params(lens, query_ids)
+    busy = [s.model_dump() for s in (body.busy_slots or [])]
     return build_evidence_pack(
         db,
         skills=body.skills,
@@ -244,6 +254,7 @@ def study_advice_evidence(
         lens=lens_name,
         query_ids=qids,
         min_evidence=min_evidence_query(min_evidence),
+        busy_slots=busy,
     )
 
 
@@ -263,6 +274,7 @@ async def study_advice_plan(
     ):
         raise HTTPException(400, "invalid modality")
     lens_name, qids = parse_lens_params(lens, query_ids)
+    busy = [s.model_dump() for s in (body.busy_slots or [])]
     evidence = build_evidence_pack(
         db,
         skills=body.skills,
@@ -275,6 +287,7 @@ async def study_advice_plan(
         lens=lens_name,
         query_ids=qids,
         min_evidence=min_evidence_query(min_evidence),
+        busy_slots=busy,
     )
     return await generate_study_plan(db, evidence)
 
@@ -290,6 +303,38 @@ async def study_advice_refine(
         evidence=body.evidence,
         user_message=body.message,
     )
+
+
+class CalendarBusyBody(BaseModel):
+    ics_url: str = Field(min_length=8, max_length=2000)
+    week_start: Optional[str] = Field(
+        default=None,
+        description="ISO date (Monday preferred); defaults to current week",
+    )
+    timezone: Optional[str] = Field(
+        default=None,
+        description="IANA timezone (e.g. Europe/Rome); defaults to Europe/Rome",
+        max_length=64,
+    )
+
+
+@router.post("/profile/study-advice/calendar-busy")
+async def study_advice_calendar_busy(body: CalendarBusyBody) -> dict[str, Any]:
+    """Import busy slots for one week from a Google/Aruba/Outlook ICS feed URL."""
+    week: Optional[date] = None
+    if body.week_start:
+        try:
+            week = date.fromisoformat(body.week_start[:10])
+        except ValueError as exc:
+            raise HTTPException(400, "invalid week_start") from exc
+    try:
+        return await busy_slots_from_ics_url(
+            body.ics_url, week_start=week, tz_name=body.timezone
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001 — surface fetch failures cleanly
+        raise HTTPException(502, f"ics_fetch_failed: {exc}") from exc
 
 
 @router.get("/applications")

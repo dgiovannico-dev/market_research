@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -20,6 +21,8 @@ from app.application.assistant import (
     propose_report,
     validate_spec,
 )
+from app.application.assistant.dashboard_narrative import narrate_dashboard
+from app.application.assistant.report_pdf import build_report_pdf
 from app.application.assistant.specs import ReportSpec
 from app.application.briefs import BRIEF_TYPES, render_brief
 from app.storage.db import get_db
@@ -89,8 +92,14 @@ def _run_brief(db: Session, body: BriefBody | ProposeBody) -> dict[str, Any]:
         period_days=body.period_days,
         country_code=body.country_code,
         owned_skills=body.owned_skills,
+        locale=body.locale,
     )
-    return {"kind": "brief", "brief": result, "meta": _locale_meta(body.locale)}
+    # Briefs now ship locale-aware human narratives.
+    return {
+        "kind": "brief",
+        "brief": result,
+        "meta": {"locale": body.locale, "narrative_locale": body.locale},
+    }
 
 
 @router.post("/assistant/propose")
@@ -146,3 +155,62 @@ def assistant_validate(spec: dict[str, Any]) -> dict[str, Any]:
 @router.post("/assistant/materialize-report")
 def assistant_materialize(spec: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any]:
     return materialize_report(db, ReportSpec.model_validate(spec))
+
+
+class DashboardNarrativeBody(BaseModel):
+    period_days: int = Field(default=30, ge=1, le=365)
+    prompt: str = Field(default="", max_length=4000)
+    locale: LocaleType = "en"
+    country_code: Optional[str] = Field(default=None, max_length=64)
+
+
+@router.post("/assistant/dashboard-narrative")
+async def assistant_dashboard_narrative(
+    body: DashboardNarrativeBody,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Human-language summary of observed dashboard KPIs / trends (LLM when enabled)."""
+    result = await narrate_dashboard(
+        db,
+        period_days=body.period_days,
+        user_prompt=body.prompt,
+        locale=body.locale,
+        country_code=body.country_code,
+    )
+    return {**result, "meta": _locale_meta(body.locale)}
+
+
+class ReportPdfBody(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=4000)
+    locale: LocaleType = "en"
+    country_code: Optional[str] = Field(default=None, max_length=64)
+
+
+@router.post("/assistant/report-pdf")
+async def assistant_report_pdf(
+    body: ReportPdfBody,
+    db: Session = Depends(get_db),
+) -> Response:
+    """Downloadable PDF preview for a report proposal (observed evidence + narrative)."""
+    try:
+        built = await build_report_pdf(
+            db,
+            prompt=body.prompt,
+            locale=body.locale,
+            country_code=body.country_code,
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(500, f"PDF generation failed: {exc}") from exc
+
+    filename = str(built["filename"])
+    return Response(
+        content=built["pdf_bytes"],
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-FMI-Narrative-Source": str(built.get("narrative_source") or ""),
+            "Cache-Control": "no-store",
+        },
+    )

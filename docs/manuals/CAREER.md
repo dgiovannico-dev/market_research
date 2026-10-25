@@ -87,33 +87,40 @@ Keep **discovery** and **focus** intents updated in [RESEARCH.md](./RESEARCH.md)
 
 ## Learn — Study Advisor (`/learn`)
 
-**Purpose:** Evidence-backed **study plans** from your local skills, market signals, and constraints (hours/week, modality, horizon).
+**Purpose:** Evidence-backed **study plans** from your local skills and market signals, with a **Google-style week calendar** that skips busy hours and spreads study across the week for work–life balance.
 
 ![Learn — Study Advisor](../assets/screenshots/09-learn.png)
 
 ### What you'll see
 
 - Form: hours per week, modality (`employed_part_time`, `freelance_full_time`, `intensive`), horizon weeks.
-- Generated plan table with evidence payload for transparency.
-- Refine chat, local persist (`fmi:studyPlan:v1`), optional **ICS export**.
+- **Busy hours** editor — multiple blocks per day (work, calls, etc.); stored in `fmi:studyBusySlots:v1`.
+- **Sync your calendar** — paste a private **ICS / webcal** URL (Google Calendar secret address, Aruba, Outlook, Apple). The API imports this week’s events as busy slots (timezone from your browser). **Import & replan study** syncs then regenerates the plan.
+- **Week calendar** — hour × day grid with busy (grey) and study (signal) blocks; study load aims at all seven days when free windows exist.
+- Human-readable plan card: focus skills, weekly checkpoints, plain-language notes (no raw `source=llm` chrome).
+- Adjust note, local persist (`fmi:studyPlan:v1`), optional **ICS export** of study blocks.
 - **Proposed watches** when returned—same accept flow as Assistant.
 
 ### How to use
 
 1. Ensure **Profile** skills are set; Learn waits for hydrated profile and prefs.
-2. Choose hours, modality, and horizon; **Generate** plan via Study Advisor API.
-3. **Refine** with a user message (LLM refine endpoint) while keeping evidence attached.
-4. **Persist** plan locally and export ICS for calendar blocking if useful.
-5. Review proposed watches—accept explicitly ([RESEARCH.md](./RESEARCH.md)).
-6. Use guided copy for methodology; switch global **trends_only** if you only want the plan table.
+2. Mark busy hours manually **or** paste an ICS URL → **Import this week** (or **Import & replan study** each Monday).
+3. Choose hours, modality, and horizon; **Generate plan**.
+4. Read the week calendar and the plan card; **Adjust** with a short note if needed (LLM refine when configured).
+5. **Persist** locally and/or **Export ICS** so study blocks land in your calendar.
+6. Review proposed watches—accept explicitly ([RESEARCH.md](./RESEARCH.md)).
 
 ### Common pitfalls
 
 - Generating before Profile hydrates—wait for skills to load or refresh Profile.
+- Using a **public** calendar URL that omits private events—prefer the secret iCal address.
+- Pasting an ICS URL that the server cannot fetch (private network / blocked host)—use a cloud calendar publish URL.
 - Treating the plan as certification advice—it is evidence-linked study sequencing, not vendor endorsement.
 - Ignoring proposed watches that would improve **focus** lens coverage for your goals.
 
 Stack Compass **learning candidates** are the discovery entry; Learn is the structured weekly plan layer ([EXPLORE.md](./EXPLORE.md) — Stack).
+
+**API:** `POST /api/v1/profile/study-advice/plan` (busy_slots), `POST /api/v1/profile/study-advice/calendar-busy` (ics_url + timezone).
 
 ---
 
@@ -152,7 +159,7 @@ Alerts and weekly report share similar server profile assumptions—see [ADMIN.m
 |-----------|------------|------|
 | Skills ranked in the market | [EXPLORE.md](./EXPLORE.md) — Skills / Trends | Profile + Stack for *your* gap |
 | Postings that match a technology | Jobs text filter or Explorer | Lens **focus** if tied to an intent |
-| A weekly learning rhythm | Learn ICS export | Stack candidates for *what* to learn |
+| A weekly learning rhythm | Learn calendar sync + ICS export | Stack candidates for *what* to learn |
 | Proof your focus bet collects ads | [RESEARCH.md](./RESEARCH.md) — My focus | Jobs or Explorer with focus lens |
 
 The Jobs zone never replaces analytics—it complements them with **inventory**, **local persona**, **planning**, and **outcome tracking**.
@@ -174,6 +181,8 @@ Auth matrix: [OVERVIEW.md](./OVERVIEW.md).
 |---------|--------------|------------|
 | Profile analysis empty | Skills not saved or API down | Save Profile; check network / [../ops/RUNBOOKS.md](../ops/RUNBOOKS.md) §1 |
 | Learn stuck loading | Profile not hydrated | Reload; open Profile first |
+| Calendar sync fails | Bad ICS URL / SSRF block / fetch error | Use HTTPS secret iCal link; check API `502 ics_fetch_failed` |
+| Study only on weekends | Too many weekday busy blocks | Free evenings or lower hours/week; check week calendar |
 | Applications list empty | Shared server profile unused yet | Submit first row; not a per-login account |
 | Stack shows no candidates | Empty profile or thin corpus | Add skills; check Quality / Market scan |
 

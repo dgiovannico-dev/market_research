@@ -8,6 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.analytics import kpis
 from app.analytics.cooccurrence import skill_cooccurrence
+from app.application.briefs.human_narrative import (
+    adjacent_narrative,
+    normalize_locale,
+    suggest_watches_narrative,
+)
 from app.application.briefs.support import (
     DEFAULT_LENS,
     MIN_SAMPLE,
@@ -33,7 +38,9 @@ def adjacent(
     period_days: int = 90,
     country_code: Optional[str] = None,
     owned_skills: Optional[Sequence[str]] = None,
+    locale: str = "en",
 ) -> dict[str, Any]:
+    loc = normalize_locale(locale)
     n = lens_sample_size(
         db,
         lens=lens,
@@ -59,6 +66,7 @@ def adjacent(
         limits=limits,
         excluded_thin_n=excluded,
         extra=countries_extra(country_code),
+        locale=loc,
     )
     if refused:
         return refused
@@ -98,25 +106,17 @@ def adjacent(
         }
     ]
     status = status_for_n(n)
-    scope = geo_label(country_code)
-    if not owned:
-        narrative = (
-            f"Lens={lens}{scope}, n={n}. No profile skills configured — "
-            "cannot rank adjacent opportunities."
-        )
-    elif not candidates:
-        narrative = (
-            f"Lens={lens}{scope}, n={n}. No co-occurring skills near profile "
-            f"with support ≥{MIN_SAMPLE}."
-        )
-    else:
-        bits = ", ".join(
-            f"{c['adjacent']}↔{c['owned']} (support={c['support']})"
-            for c in candidates[:5]
-        )
-        narrative = f"Lens={lens}{scope}, n={n}. Adjacent (not in profile): {bits}."
-        if status == "thin_sample":
-            narrative += f" Thin sample (n={n} < {THIN_SAMPLE})."
+    narrative = adjacent_narrative(
+        locale=loc,
+        lens=lens,
+        n=n,
+        owned=bool(owned),
+        candidates=candidates,
+        min_support=MIN_SAMPLE,
+        thin=status == "thin_sample",
+        thin_threshold=THIN_SAMPLE,
+        geo=geo_label(country_code),
+    )
     return base_payload(
         brief_type="adjacent",
         lens=lens,
@@ -138,8 +138,10 @@ def suggest_watches(
     period_days: int = 90,
     country_code: Optional[str] = None,
     owned_skills: Optional[Sequence[str]] = None,
+    locale: str = "en",
 ) -> dict[str, Any]:
     """Propose intents only — never INSERT SearchQuery."""
+    loc = normalize_locale(locale)
     n = lens_sample_size(
         db,
         lens=lens,
@@ -165,6 +167,7 @@ def suggest_watches(
         limits=limits,
         excluded_thin_n=excluded,
         extra=countries_extra(country_code),
+        locale=loc,
     )
     if refused:
         return refused
@@ -241,18 +244,16 @@ def suggest_watches(
                 break
 
     status = status_for_n(n)
-    scope = geo_label(country_code)
-    if proposed:
-        narrative = (
-            f"Lens={lens}{scope}, n={n}. {len(proposed)} proposed watch(es) — "
-            "accept via /research/watches/accept to persist. Nothing saved yet."
-        )
-    else:
-        narrative = (
-            f"Lens={lens}{scope}, n={n}. No watch candidates with support ≥{MIN_SAMPLE}."
-        )
-    if status == "thin_sample":
-        narrative += f" Thin sample (n={n} < {THIN_SAMPLE})."
+    narrative = suggest_watches_narrative(
+        locale=loc,
+        lens=lens,
+        n=n,
+        proposed_count=len(proposed),
+        min_support=MIN_SAMPLE,
+        thin=status == "thin_sample",
+        thin_threshold=THIN_SAMPLE,
+        geo=geo_label(country_code),
+    )
 
     return base_payload(
         brief_type="suggest_watches",

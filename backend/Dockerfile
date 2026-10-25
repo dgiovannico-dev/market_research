@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential curl && \
+    build-essential curl fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/* && \
     useradd --create-home --uid 1000 --shell /usr/sbin/nologin appuser
 

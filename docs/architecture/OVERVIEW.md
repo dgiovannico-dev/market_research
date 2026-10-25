@@ -74,7 +74,7 @@ Backend and UI features map to these bounded capabilities (names match code and 
 | **dashboard** | Signal desk UI; **guided** vs **trends_only** presentation ([ADR-004](../decisions/ADR-004-dashboard-modes.md)) |
 | **profile-outcomes** | Applications, alerts, weekly report; server profile is seed-oriented |
 | **stack-compass** | Learning candidates / irreplaceability from profile + market |
-| **study-advisor** | Evidence-grounded study plans (optional LLM refine) |
+| **study-advisor** | Evidence-grounded study plans, busy-slot / ICS week calendar, WLB distribution (optional LLM refine) |
 | **certifications** | Taxonomy + job↔cert KPIs |
 | **ops** | Scheduler, credentials, LLM runtime/prompts, metrics |
 | **mcp-analytics** | Stdio MCP for schema/metrics/briefs |

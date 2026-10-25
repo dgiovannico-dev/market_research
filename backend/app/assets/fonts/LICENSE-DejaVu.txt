@@ -1,0 +1,3 @@
+DejaVu fonts — Bitstream Vera Copyright + Public Domain changes.
+See https://dejavu-fonts.github.io/
+These TTF files are vendored for Unicode PDF rendering (report preview).

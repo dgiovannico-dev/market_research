@@ -144,7 +144,12 @@ export async function tourJobs(page) {
   await sleep(PACE.read);
   await scrollPageToEnd(page, { label: "Scroll · Profile + gaps" });
 
-  await gotoPath(page, "/learn", "Study Advisor · plan from Stack evidence");
+  await gotoPath(page, "/learn", "Study Advisor · busy hours + week calendar");
+  await caption(
+    page,
+    "Busy slots + optional ICS sync (Google / Aruba) · WLB across 7 days",
+  );
+  await sleep(PACE.read);
   await softClick(
     page,
     page.getByRole("button", { name: /Generate plan/i }),
@@ -152,7 +157,12 @@ export async function tourJobs(page) {
   );
   await waitForData(page);
   await sleep(PACE.read);
-  await scrollPageToEnd(page, { label: "Scroll · Study plan" });
+  await page
+    .getByRole("heading", { name: /Week calendar/i })
+    .scrollIntoViewIfNeeded()
+    .catch(() => {});
+  await sleep(PACE.read);
+  await scrollPageToEnd(page, { label: "Scroll · Study plan card" });
 
   await visit(page, "/applications", "Applications · track outreach");
 }
@@ -186,15 +196,31 @@ export async function tourResearch(page) {
 
   await visit(page, "/report", "Research · Weekly / period report");
 
-  await gotoPath(page, "/assistant", "Research · Assistant briefs");
+  await gotoPath(page, "/assistant", "Research · Assistant + propose");
   await sleep(PACE.read);
-  const gen = page
-    .getByRole("button", { name: /Generate|Ask|Run brief|Create/i })
+  const prompt = page
+    .getByPlaceholder(/trend|demand|90|es\.|e\.g\./i)
     .first();
-  if ((await gen.count()) > 0 && !(await gen.isDisabled().catch(() => true))) {
-    await softClick(page, gen, "Request a brief (may stub without LLM)");
-    await waitForData(page);
-    await sleep(PACE.read);
+  if ((await prompt.count()) > 0) {
+    await prompt.fill("Better Java or Python and why?");
+    await sleep(PACE.afterFill);
+    const propose = page.getByRole("button", { name: /Propose|Proponi/i });
+    if ((await propose.count()) > 0 && !(await propose.isDisabled().catch(() => true))) {
+      await softClick(page, propose, "Propose skill compare dashboard");
+      await waitForData(page);
+      await sleep(PACE.read);
+      await caption(page, "Compare mode · ranked mentions (not global rise/cool)");
+      await sleep(PACE.read);
+    }
+  } else {
+    const gen = page
+      .getByRole("button", { name: /Generate|Ask|Run brief|Create/i })
+      .first();
+    if ((await gen.count()) > 0 && !(await gen.isDisabled().catch(() => true))) {
+      await softClick(page, gen, "Request a brief (may stub without LLM)");
+      await waitForData(page);
+      await sleep(PACE.read);
+    }
   }
   await scrollPageToEnd(page, { label: "Scroll · Assistant" });
 }

@@ -23,6 +23,7 @@
     "next-intl": "^4.14.9",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
     "zod": "^3.24.3"
   },
   "devDependencies": {

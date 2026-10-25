@@ -83,8 +83,22 @@ async function maybeGeneratePlan(page) {
   if ((await btn.count()) === 0) return;
   if (await btn.isDisabled()) return;
   await btn.click();
-  await page.waitForTimeout(2000);
+  // Wait until generation finishes and week calendar / plan card appear
+  await page
+    .getByRole("button", { name: /^Generate plan$/i })
+    .waitFor({ state: "visible", timeout: 120000 })
+    .catch(() => {});
+  await page
+    .getByRole("heading", { name: /Week calendar/i })
+    .waitFor({ state: "visible", timeout: 120000 })
+    .catch(() => {});
+  await page
+    .getByText(/Your study plan|Focus on /i)
+    .first()
+    .waitFor({ state: "visible", timeout: 60000 })
+    .catch(() => {});
   await waitForData(page);
+  await page.waitForTimeout(1500);
 }
 
 async function maybeAnalyzeGaps(page) {

@@ -1,15 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
-  parseSkillsCsv,
+  normalizeCountryCode,
+  normalizeCurrency,
+  normalizeRateUnit,
+  profileCountryOptions,
+  PROFILE_CURRENCIES,
+  PROFILE_RATE_UNITS,
   useLocalProfile,
 } from "@/features/user-profile";
 import { syncFocusTechnologiesFromSkills } from "@/features/user-profile/syncFocusTechnologies";
 import { useDashboardPrefs } from "@/features/dashboard-prefs";
 import { requestJSON } from "@/shared/api/http";
+import { ProfileTagField } from "./ProfileTagField";
 
 type GapsResponse = {
   gaps?: Array<Record<string, unknown>>;
@@ -24,51 +30,23 @@ type RecsResponse = {
   error?: string;
 };
 
+const fieldClass =
+  "mt-1 w-full rounded-md border border-[var(--line)] bg-transparent px-2 py-1.5 text-sm text-[var(--ink)] focus:border-[var(--signal)] focus:outline-none";
+
 export function LocalProfilePanel() {
   const t = useTranslations("profile");
   const { profile, setProfile, hydrated } = useLocalProfile();
   const { prefs } = useDashboardPrefs();
   const guided = prefs.view_mode === "guided";
-  const [skillsRaw, setSkillsRaw] = useState("");
-  const [certsRaw, setCertsRaw] = useState("");
   const [gaps, setGaps] = useState<GapsResponse>({});
   const [recs, setRecs] = useState<RecsResponse>({});
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    setSkillsRaw(profile.skills.join(", "));
-    setCertsRaw(profile.certifications.join(", "));
-  }, [hydrated, profile.skills, profile.certifications]);
-
-  async function analyze() {
-    setError(null);
-    const skills = parseSkillsCsv(skillsRaw);
-    const certifications = parseSkillsCsv(certsRaw);
-    const next = { ...profile, skills, certifications };
-    setProfile(next);
-    syncFocusTechnologiesFromSkills(skills);
-    setSaved(true);
-    try {
-      const [g, r] = await Promise.all([
-        requestJSON<GapsResponse>("/api/v1/profile/skill-gaps", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ skills }),
-        }),
-        requestJSON<RecsResponse>("/api/v1/profile/recommendations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ skills }),
-        }),
-      ]);
-      setGaps(g);
-      setRecs(r);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("loadFailed"));
-    }
-  }
+  const countries = useMemo(() => profileCountryOptions(), []);
+  const residence = normalizeCountryCode(profile.residence_country);
+  const currency = normalizeCurrency(profile.rate_currency);
+  const unit = normalizeRateUnit(profile.rate_unit);
 
   function persistField<K extends keyof typeof profile>(
     key: K,
@@ -78,8 +56,47 @@ export function LocalProfilePanel() {
     setSaved(true);
   }
 
+  async function analyze() {
+    setError(null);
+    const next = {
+      ...profile,
+      residence_country: residence,
+      rate_currency: currency,
+      rate_unit: unit,
+      skills: profile.skills,
+      certifications: profile.certifications,
+    };
+    setProfile(next);
+    syncFocusTechnologiesFromSkills(next.skills);
+    setSaved(true);
+    try {
+      const [g, r] = await Promise.all([
+        requestJSON<GapsResponse>("/api/v1/profile/skill-gaps", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ skills: next.skills }),
+        }),
+        requestJSON<RecsResponse>("/api/v1/profile/recommendations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ skills: next.skills }),
+        }),
+      ]);
+      setGaps(g);
+      setRecs(r);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("loadFailed"));
+    }
+  }
+
   const gapItems = gaps.gaps || [];
   const recItems = recs.items || [];
+
+  if (!hydrated) {
+    return (
+      <p className="text-sm text-[var(--muted)]">{t("loadingProfile")}</p>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -98,73 +115,109 @@ export function LocalProfilePanel() {
         ) : null}
       </header>
 
-      <section className="space-y-3 rounded-xl border border-[var(--line)] bg-[var(--card)] p-4">
+      <section className="space-y-4 rounded-xl border border-[var(--line)] bg-[var(--card)] p-4">
         <label className="block text-sm">
-          <span className="opacity-70">{t("fieldName")}</span>
+          <span className="text-[var(--muted)]">{t("fieldName")}</span>
           <input
-            className="mt-1 w-full rounded border border-[var(--line)] bg-transparent px-2 py-1.5"
+            className={fieldClass}
             value={profile.display_name}
             onChange={(e) => persistField("display_name", e.target.value)}
+            autoComplete="name"
           />
         </label>
+
         <label className="block text-sm">
-          <span className="opacity-70">{t("fieldCountry")}</span>
-          <input
-            className="mt-1 w-full rounded border border-[var(--line)] bg-transparent px-2 py-1.5"
-            value={profile.residence_country}
-            onChange={(e) => persistField("residence_country", e.target.value)}
-          />
+          <span className="text-[var(--muted)]">{t("fieldCountry")}</span>
+          <select
+            className={fieldClass}
+            value={residence}
+            onChange={(e) =>
+              persistField("residence_country", normalizeCountryCode(e.target.value))
+            }
+          >
+            <option value="">{t("countryPlaceholder")}</option>
+            {countries.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.label}
+              </option>
+            ))}
+          </select>
         </label>
-        <div className="flex flex-wrap gap-3 text-sm">
-          <label className="min-w-[8rem] flex-1">
-            <span className="opacity-70">{t("fieldRate")}</span>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <label className="block text-sm">
+            <span className="text-[var(--muted)]">{t("fieldRate")}</span>
             <input
-              className="mt-1 w-full rounded border border-[var(--line)] bg-transparent px-2 py-1.5"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step={1}
+              className={fieldClass}
               value={profile.target_rate_amount}
-              onChange={(e) => persistField("target_rate_amount", e.target.value)}
+              placeholder={t("ratePlaceholder")}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "" || /^\d*([.,]\d*)?$/.test(v)) {
+                  persistField("target_rate_amount", v.replace(",", "."));
+                }
+              }}
             />
           </label>
-          <label className="w-24">
-            <span className="opacity-70">{t("fieldCurrency")}</span>
-            <input
-              className="mt-1 w-full rounded border border-[var(--line)] bg-transparent px-2 py-1.5"
-              value={profile.rate_currency}
-              onChange={(e) => persistField("rate_currency", e.target.value)}
-            />
+          <label className="block text-sm">
+            <span className="text-[var(--muted)]">{t("fieldCurrency")}</span>
+            <select
+              className={fieldClass}
+              value={currency}
+              onChange={(e) =>
+                persistField("rate_currency", normalizeCurrency(e.target.value))
+              }
+            >
+              {PROFILE_CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </label>
-          <label className="w-24">
-            <span className="opacity-70">{t("fieldUnit")}</span>
-            <input
-              className="mt-1 w-full rounded border border-[var(--line)] bg-transparent px-2 py-1.5"
-              value={profile.rate_unit}
-              onChange={(e) => persistField("rate_unit", e.target.value)}
-            />
+          <label className="block text-sm">
+            <span className="text-[var(--muted)]">{t("fieldUnit")}</span>
+            <select
+              className={fieldClass}
+              value={unit}
+              onChange={(e) =>
+                persistField("rate_unit", normalizeRateUnit(e.target.value))
+              }
+            >
+              {PROFILE_RATE_UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {t(`unit_${u}`)}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
-        <label className="block text-sm">
-          <span className="opacity-70">{t("fieldSkills")}</span>
-          <textarea
-            className="mt-1 w-full rounded border border-[var(--line)] bg-transparent px-2 py-1.5 font-mono text-xs"
-            rows={3}
-            value={skillsRaw}
-            onChange={(e) => setSkillsRaw(e.target.value)}
-            placeholder="Python, Kubernetes, AWS"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="opacity-70">{t("fieldCerts")}</span>
-          <textarea
-            className="mt-1 w-full rounded border border-[var(--line)] bg-transparent px-2 py-1.5 font-mono text-xs"
-            rows={2}
-            value={certsRaw}
-            onChange={(e) => setCertsRaw(e.target.value)}
-            placeholder="CKAD, AWS SAA"
-          />
-        </label>
-        <div className="flex flex-wrap items-center gap-3">
+
+        <ProfileTagField
+          label={t("fieldSkills")}
+          hint={t("skillsHint")}
+          values={profile.skills}
+          onChange={(skills) => persistField("skills", skills)}
+          placeholder={t("skillsPlaceholder")}
+          addLabel={t("addTag")}
+        />
+        <ProfileTagField
+          label={t("fieldCerts")}
+          hint={t("certsHint")}
+          values={profile.certifications}
+          onChange={(certifications) => persistField("certifications", certifications)}
+          placeholder={t("certsPlaceholder")}
+          addLabel={t("addTag")}
+        />
+
+        <div className="flex flex-wrap items-center gap-3 pt-1">
           <button
             type="button"
-            className="rounded-full bg-[var(--signal)] px-4 py-2 text-sm text-white"
+            className="rounded-md bg-[var(--signal)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
             onClick={() => void analyze()}
           >
             {t("analyzeGaps")}
@@ -219,7 +272,10 @@ export function LocalProfilePanel() {
         ) : (
           <ul className="mt-3 space-y-2 text-sm">
             {recItems.slice(0, 10).map((item) => (
-              <li key={String(item.job_id)} className="border-b border-[var(--line)] py-1.5 last:border-b-0">
+              <li
+                key={String(item.job_id)}
+                className="border-b border-[var(--line)] py-1.5 last:border-b-0"
+              >
                 <span className="text-[var(--ink)]">{String(item.title)}</span>
                 <span className="ml-2 text-xs text-[var(--muted)]">
                   match {String(item.skill_match)}

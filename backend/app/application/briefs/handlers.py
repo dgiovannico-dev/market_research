@@ -10,6 +10,12 @@ from app.analytics import kpis
 from app.analytics.countries import country_comparison
 from app.analytics.rates import rate_explorer
 from app.application.briefs.handlers_adjacent import adjacent, suggest_watches
+from app.application.briefs.human_narrative import (
+    focus_vs_market_narrative,
+    normalize_locale,
+    rising_cooling_narrative,
+    where_demand_narrative,
+)
 from app.application.briefs.support import (
     DEFAULT_LENS,
     MIN_SAMPLE,
@@ -41,8 +47,10 @@ def rising_cooling(
     query_ids: Optional[Sequence[int]] = None,
     period_days: int = 90,
     country_code: Optional[str] = None,
+    locale: str = "en",
 ) -> dict[str, Any]:
     """Wrap ``technology_trends`` half-period Δ (+ rates when present)."""
+    loc = normalize_locale(locale)
     n = lens_sample_size(
         db,
         lens=lens,
@@ -68,6 +76,7 @@ def rising_cooling(
         limits=limits,
         excluded_thin_n=excluded,
         extra=countries_extra(country_code),
+        locale=loc,
     )
     if refused:
         return refused
@@ -122,36 +131,26 @@ def rising_cooling(
         )
 
     status = status_for_n(n)
-    fmt = lambda rows: (
-        ", ".join(
-            f"{t['technology']} ({t['growth_pct']:.0f}%, n={t['sample_size']})"
-            for t in rows[:5]
-        )
-        if rows
-        else "none with adequate support"
+    narrative = rising_cooling_narrative(
+        locale=loc,
+        lens=lens,
+        n=n,
+        period_days=period_days,
+        rising=rising,
+        cooling=cooling,
+        rate_buckets=len(rate_ok),
+        jobs_with_rates=int(rates.get("jobs_with_rates") or 0),
+        thin=status == "thin_sample",
+        thin_threshold=THIN_SAMPLE,
+        geo=geo_label(country_code),
     )
-    geo = geo_label(country_code)
-    parts = [
-        f"Lens={lens}{geo}, n={n} jobs in window ({period_days}d).",
-        f"Rising (half-period Δ): {fmt(rising)}.",
-        f"Cooling: {fmt(cooling)}.",
-    ]
-    if status == "thin_sample":
-        parts.insert(1, f"Thin sample (n={n} < {THIN_SAMPLE}): treat signals cautiously.")
-    if rate_ok:
-        parts.append(
-            f"Advertised rates present for {len(rate_ok)} country/unit buckets "
-            f"(jobs_with_rates={rates.get('jobs_with_rates', 0)})."
-        )
-    else:
-        parts.append("No stable advertised-rate buckets in window.")
 
     return base_payload(
         brief_type="rising_cooling",
         lens=lens,
         sample_size=n,
         evidence=evidence,
-        narrative=" ".join(parts),
+        narrative=narrative,
         limits=limits,
         status=status,
         excluded_thin_n=excluded,
@@ -166,7 +165,9 @@ def where_demand(
     query_ids: Optional[Sequence[int]] = None,
     period_days: int = 90,
     country_code: Optional[str] = None,
+    locale: str = "en",
 ) -> dict[str, Any]:
+    loc = normalize_locale(locale)
     n = lens_sample_size(
         db,
         lens=lens,
@@ -192,6 +193,7 @@ def where_demand(
         limits=limits,
         excluded_thin_n=excluded,
         extra=countries_extra(country_code),
+        locale=loc,
     )
     if refused:
         return refused
@@ -218,18 +220,16 @@ def where_demand(
         }
     ]
     status = status_for_n(n)
-    scope = geo_label(country_code)
-    if not items:
-        narrative = f"Lens={lens}{scope}, n={n}. No country buckets with jobs in window."
-    else:
-        top = ", ".join(
-            f"{c['country_code']} (jobs={c['jobs_observed']}, "
-            f"remote={c['remote_share']:.0%})"
-            for c in items[:5]
-        )
-        narrative = f"Lens={lens}{scope}, n={n} ({period_days}d). Top geos: {top}."
-        if status == "thin_sample":
-            narrative += f" Thin sample (n={n} < {THIN_SAMPLE})."
+    narrative = where_demand_narrative(
+        locale=loc,
+        lens=lens,
+        n=n,
+        period_days=period_days,
+        items=items,
+        thin=status == "thin_sample",
+        thin_threshold=THIN_SAMPLE,
+        geo=geo_label(country_code),
+    )
     return base_payload(
         brief_type="where_demand",
         lens=lens,
@@ -250,9 +250,11 @@ def focus_vs_market(
     query_ids: Optional[Sequence[int]] = None,
     period_days: int = 90,
     country_code: Optional[str] = None,
+    locale: str = "en",
 ) -> dict[str, Any]:
     del lens
     lens = "compare"
+    loc = normalize_locale(locale)
     n = lens_sample_size(
         db,
         lens=lens,
@@ -278,6 +280,7 @@ def focus_vs_market(
         limits=limits,
         excluded_thin_n=excluded,
         extra=countries_extra(country_code),
+        locale=loc,
     )
     if refused:
         return refused
@@ -305,19 +308,22 @@ def focus_vs_market(
         }
     ]
     status = status_for_n(n)
-    scope = geo_label(country_code)
-    narrative = (
-        f"Lens=compare{scope}, n={n} (union). Market jobs={m_count}, focus={f_count}, "
-        f"overlap={overlap} ({period_days}d)."
-    )
-    if f_count < MIN_SAMPLE:
-        narrative += (
-            f" Focus side thin (n={f_count} < {MIN_SAMPLE}) — "
-            "enable focus intents and sync before comparing growth."
-        )
+    focus_thin = int(f_count) < MIN_SAMPLE
+    if focus_thin:
         status = "thin_sample" if status == "ok" else status
-    elif status == "thin_sample":
-        narrative += f" Thin overall sample (n={n} < {THIN_SAMPLE})."
+    narrative = focus_vs_market_narrative(
+        locale=loc,
+        n=n,
+        period_days=period_days,
+        market_n=int(m_count),
+        focus_n=int(f_count),
+        overlap_n=int(overlap),
+        focus_thin=focus_thin,
+        min_sample=MIN_SAMPLE,
+        thin=status == "thin_sample" and not focus_thin,
+        thin_threshold=THIN_SAMPLE,
+        geo=geo_label(country_code),
+    )
     return base_payload(
         brief_type="focus_vs_market",
         lens=lens,

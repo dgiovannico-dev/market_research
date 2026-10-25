@@ -69,7 +69,7 @@ Prefer motion? Watch the [screen recordings](docs/manuals/VISUAL-TOUR.md) (full 
 
 - **Explore** — Executive KPIs, market scan, explorer, trends, skills co-occurrence, rates, countries, languages, certifications, Stack Compass.
 - **Research** — Focus intents, weekly report (deterministic Markdown; LLM narrative when configured), Assistant evidence briefs.
-- **Jobs & career** — Job inventory, browser profile (localStorage), Learn / study advisor, applications log.
+- **Jobs & career** — Job inventory, browser profile (localStorage), Learn / Study Advisor (busy hours, ICS calendar sync, week grid), applications log.
 - **Ops** — Data quality, source catalog & runs, alerts; admin LLM runtime and connector credentials when OIDC `admin` (or local ops token).
 - **MCP** — Schema-driven analytics over a read-only DB for agent tooling ([ADR-006](docs/decisions/ADR-006-mcp-schema-driven-analytics.md)).
 

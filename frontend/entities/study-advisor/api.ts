@@ -1,4 +1,5 @@
 import { API_URL } from "@/shared/api";
+import type { BusySlot } from "./busySlots";
 import type { StudyModality, StudyPlan, StudyPlanResponse } from "./model";
 
 export type StudyAdviceInput = {
@@ -9,6 +10,7 @@ export type StudyAdviceInput = {
   horizon_weeks: number;
   country_code?: string;
   days?: number;
+  busy_slots?: BusySlot[];
 };
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
@@ -27,6 +29,13 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return data as T;
 }
 
+export type CalendarBusyResponse = {
+  week_start: string;
+  event_count: number;
+  imported: number;
+  busy_slots: BusySlot[];
+};
+
 export const studyAdvisorApi = {
   evidence: (body: StudyAdviceInput) =>
     postJson<Record<string, unknown>>("/api/v1/profile/study-advice/evidence", body),
@@ -37,4 +46,13 @@ export const studyAdvisorApi = {
     evidence: Record<string, unknown>;
     message: string;
   }) => postJson<StudyPlanResponse>("/api/v1/profile/study-advice/refine", body),
+  calendarBusy: (body: {
+    ics_url: string;
+    week_start?: string;
+    timezone?: string;
+  }) =>
+    postJson<CalendarBusyResponse>(
+      "/api/v1/profile/study-advice/calendar-busy",
+      body,
+    ),
 };

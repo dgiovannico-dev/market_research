@@ -1,24 +1,34 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getJSON } from "@/shared/api";
+import { Markdown } from "@/shared/ui";
 
 type WeeklyReport = {
   markdown?: string;
   llm_health?: Record<string, unknown>;
 };
 
-async function fetchReport() {
-  return getJSON<WeeklyReport>("/api/v1/reports/weekly");
+async function fetchReport(locale: string) {
+  const q = locale ? `?locale=${encodeURIComponent(locale)}` : "";
+  return getJSON<WeeklyReport>(`/api/v1/reports/weekly${q}`);
 }
 
-export default async function ReportPage() {
+export default async function ReportPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations("report");
   let data: WeeklyReport = {};
   let error: string | null = null;
   try {
-    data = await fetchReport();
+    data = await fetchReport(locale);
   } catch (e) {
     error = e instanceof Error ? e.message : t("loadFailed");
   }
+
+  const markdown = (data.markdown || "").trim();
 
   return (
     <div className="space-y-5">
@@ -39,13 +49,12 @@ export default async function ReportPage() {
           {error}
         </div>
       ) : null}
-      <section className="card p-4">
-        <pre
-          className="whitespace-pre-wrap text-xs leading-relaxed text-[var(--ink)]"
-          style={{ fontFamily: "var(--mono)" }}
-        >
-          {data.markdown || ""}
-        </pre>
+      <section className="card p-5 sm:p-6" aria-label={t("title")}>
+        {markdown ? (
+          <Markdown>{markdown}</Markdown>
+        ) : !error ? (
+          <p className="text-sm text-[var(--muted)]">{t("empty")}</p>
+        ) : null}
       </section>
     </div>
   );

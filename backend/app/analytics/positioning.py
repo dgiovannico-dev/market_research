@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.analytics.country_filter import parse_country_codes
 from app.analytics.job_query import base_job_query
+from app.analytics.skill_ownership import names_match_owned, resolve_owned_skill_names
 from app.storage.models import Job, JobSkill, Technology, UserProfile, UserSkill
 
 
@@ -26,7 +27,7 @@ def skill_gaps(
     profile: UserProfile | None = None
     weights: dict[str, Any] = {}
     if owned_skills is not None:
-        user_names = {n.strip() for n in owned_skills if n and str(n).strip()}
+        user_names = resolve_owned_skill_names(owned_skills)
         profile_id = None
         residence = None
     else:
@@ -69,7 +70,7 @@ def skill_gaps(
             {
                 "technology": name,
                 "technology_id": tech_id,
-                "owned": name in user_names,
+                "owned": names_match_owned(name, user_names),
                 "required_mentions": 0,
                 "preferred_mentions": 0,
                 "mentioned_mentions": 0,
@@ -137,7 +138,7 @@ def recommendations(
 ) -> dict[str, Any]:
     profile: UserProfile | None = None
     if owned_skills is not None:
-        user_tech = {n.strip() for n in owned_skills if n and str(n).strip()}
+        user_tech = resolve_owned_skill_names(owned_skills)
         profile_id = None
     else:
         profile = db.scalar(select(UserProfile).order_by(UserProfile.id).limit(1))
@@ -166,16 +167,21 @@ def recommendations(
         .limit(300)
     ).unique().all()
 
-    items = []
+    items: list[dict[str, Any]] = []
     for job in jobs:
         names = {s.technology.canonical_name for s in job.skills if s.technology}
         if not names:
             continue
-        overlap = names & user_tech
+        overlap = {n for n in names if names_match_owned(n, user_tech)}
+        if not overlap:
+            # Zero-overlap rows look like spam duplicates in the UI; skip them.
+            continue
         missing_required = {
             s.technology.canonical_name
             for s in job.skills
-            if s.technology and s.importance == "required" and s.technology.canonical_name not in user_tech
+            if s.technology
+            and s.importance == "required"
+            and not names_match_owned(s.technology.canonical_name, user_tech)
         }
         match = len(overlap) / len(names)
         geo_ok = job.residence_restriction != "explicitly_restricted"
@@ -196,11 +202,22 @@ def recommendations(
             }
         )
     items.sort(key=lambda x: (-x["skill_match"], -len(x["overlap_skills"])))
+    # Deduplicate identical titles (same posting mirrored across sources/days).
+    deduped: list[dict[str, Any]] = []
+    seen_titles: set[str] = set()
+    for item in items:
+        key = " ".join(str(item.get("title") or "").lower().split())
+        if not key or key in seen_titles:
+            continue
+        seen_titles.add(key)
+        deduped.append(item)
+        if len(deduped) >= limit:
+            break
     return {
         "profile_id": profile_id,
         "period_days": days,
         "countries": codes or None,
-        "items": items[:limit],
+        "items": deduped,
         "disclaimer": "Match is overlap of configured skills vs extracted job skills.",
         "source": "client_skills" if owned_skills is not None else "db_profile",
     }

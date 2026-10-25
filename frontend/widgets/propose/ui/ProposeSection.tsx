@@ -4,6 +4,15 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { api, type AssistantLocale } from "@/lib/api";
 import { useDashboardPrefs } from "@/features/dashboard-prefs";
+import { ProposedDashboardPreview } from "./ProposedDashboardPreview";
+import { ProposedReportPreview } from "./ProposedReportPreview";
+
+type DashboardSpecSlice = {
+  title?: string;
+  period_days?: number;
+  view_mode?: "guided" | "trends_only";
+  filters?: { technologies?: string[]; countries?: string[] };
+};
 
 export function ProposeSection() {
   const t = useTranslations("assistant");
@@ -26,6 +35,9 @@ export function ProposeSection() {
         locale,
       );
       setResult(data);
+      if (data.kind === "dashboard" && data.spec && typeof data.spec === "object") {
+        applyDashboardSpec(data.spec as DashboardSpecSlice);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : t("proposeFailed"));
     } finally {
@@ -35,13 +47,18 @@ export function ProposeSection() {
 
   const apply = () => {
     if (!result || result.kind !== "dashboard") return;
-    const spec = result.spec as {
-      period_days?: number;
-      view_mode?: "guided" | "trends_only";
-      filters?: { technologies?: string[]; countries?: string[] };
-    };
-    applyDashboardSpec(spec);
+    applyDashboardSpec(result.spec as DashboardSpecSlice);
   };
+
+  const dashSpec =
+    result?.kind === "dashboard" && result.spec && typeof result.spec === "object"
+      ? (result.spec as DashboardSpecSlice)
+      : null;
+
+  const reportSpec =
+    result?.kind === "report" && result.spec && typeof result.spec === "object"
+      ? (result.spec as { title?: string; period_days?: number })
+      : null;
 
   return (
     <div className="space-y-4">
@@ -90,22 +107,37 @@ export function ProposeSection() {
         {error ? <p className="text-sm text-[var(--warn)]">{error}</p> : null}
       </section>
 
+      {dashSpec ? (
+        <ProposedDashboardPreview
+          periodDays={dashSpec.period_days && dashSpec.period_days > 0 ? dashSpec.period_days : 30}
+          title={dashSpec.title}
+          prompt={prompt}
+          focusTechnologies={dashSpec.filters?.technologies || []}
+        />
+      ) : null}
+
+      {reportSpec ? (
+        <ProposedReportPreview
+          prompt={prompt}
+          title={reportSpec.title}
+          periodDays={
+            reportSpec.period_days && reportSpec.period_days > 0
+              ? reportSpec.period_days
+              : undefined
+          }
+        />
+      ) : null}
+
       {result ? (
         <section className="card space-y-3 p-5">
-          <h3 className="font-display text-base font-semibold tracking-tight text-[var(--ink)]">
-            {t("resultTitle")}
-          </h3>
-          <pre className="overflow-x-auto font-mono text-xs text-[var(--muted)]">
-            {JSON.stringify(result, null, 2)}
-          </pre>
-          {result.materialized &&
-          typeof result.materialized === "object" &&
-          result.materialized !== null &&
-          "narrative" in result.materialized ? (
-            <p className="text-sm text-[var(--ink)]">
-              {(result.materialized as { narrative: string }).narrative}
-            </p>
-          ) : null}
+          <details>
+            <summary className="cursor-pointer font-display text-base font-semibold tracking-tight text-[var(--ink)]">
+              {t("resultTitle")}
+            </summary>
+            <pre className="mt-3 overflow-x-auto font-mono text-xs text-[var(--muted)]">
+              {JSON.stringify(result, null, 2)}
+            </pre>
+          </details>
         </section>
       ) : null}
     </div>

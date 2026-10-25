@@ -1,4 +1,5 @@
 import {
+  requestBlob,
   requestJSON,
   type DashboardLens,
 } from "@/shared/api";
@@ -45,6 +46,34 @@ export const assistantApi = {
       brief: EvidenceBrief;
       meta: AssistantLocaleMeta;
     }>("/api/v1/assistant/brief", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+  dashboardNarrative: async (body: {
+    period_days: number;
+    prompt?: string;
+    locale?: AssistantLocale;
+    country_code?: string;
+  }) => {
+    return requestJSON<{
+      narrative: string;
+      source: string;
+      llm_health?: Record<string, unknown>;
+      meta: AssistantLocaleMeta;
+    }>("/api/v1/assistant/dashboard-narrative", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+  reportPdf: async (body: {
+    prompt: string;
+    locale?: AssistantLocale;
+    country_code?: string;
+  }) => {
+    return requestBlob("/api/v1/assistant/report-pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

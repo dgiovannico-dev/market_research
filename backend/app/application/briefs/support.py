@@ -168,17 +168,21 @@ def thin_or_refuse(
     limits: str,
     excluded_thin_n: int = 0,
     extra: Optional[dict[str, Any]] = None,
+    locale: str = "en",
 ) -> Optional[dict[str, Any]]:
     if status_for_n(sample_size) != "refused":
         return None
+    from app.application.briefs.human_narrative import normalize_locale, refused_narrative
+
     payload = base_payload(
         brief_type=brief_type,
         lens=lens,
         sample_size=sample_size,
         evidence=[],
-        narrative=(
-            f"Refused: sample too thin (n={sample_size}, need ≥{MIN_SAMPLE}). "
-            "Sync discovery/focus crawlers and retry."
+        narrative=refused_narrative(
+            locale=normalize_locale(locale),
+            n=sample_size,
+            min_sample=MIN_SAMPLE,
         ),
         limits=with_evidence_limits(limits),
         status="refused",

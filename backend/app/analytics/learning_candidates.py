@@ -16,6 +16,7 @@ from app.analytics.kpis import technology_trends
 from app.analytics.lenses import compare_counts, parse_lens
 from app.analytics.positioning import skill_gaps
 from app.analytics.rate_for_tech import rate_for_technology
+from app.analytics.skill_ownership import resolve_owned_skill_names
 from app.core.config import get_settings
 
 _MIN_SUPPORT = 2
@@ -50,7 +51,7 @@ def _learning_candidates_flat(
     owned_certifications: Optional[list[str]],
     include_rates: bool,
 ) -> dict[str, Any]:
-    owned = {s.strip() for s in owned_skills if s and str(s).strip()}
+    owned = resolve_owned_skill_names(owned_skills)
     settings = get_settings()
     gaps_payload = skill_gaps(
         db,

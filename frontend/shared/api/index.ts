@@ -2,6 +2,7 @@ export {
   ApiRequestError,
   API_URL,
   getJSON,
+  requestBlob,
   requestJSON,
   resolveApiBase,
 } from "./http";
