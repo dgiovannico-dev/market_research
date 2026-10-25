@@ -92,7 +92,7 @@ Architecture diagrams: [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIE
 
 ## Quick start
 
-**Prerequisites:** Docker (recommended) or Python 3.12 + Node **22.23.4+** (Node 20 is EOL and unpatched for Node2Shell / CVE-2026-111497).
+**Prerequisites:** Docker (recommended) or Python 3.12 + Node 22.23.4+.
 
 ```bash
 git clone https://github.com/dgiovannico-dev/market_research.git
