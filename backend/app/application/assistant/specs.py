@@ -86,4 +86,5 @@ class IntentHints(BaseModel):
     include_quality: bool = False
     include_profile_gaps: bool = False
     compare_mode: bool = False
+    cooccur_mode: bool = False
     user_prompt: str | None = None

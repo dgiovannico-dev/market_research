@@ -67,6 +67,23 @@ def test_propose_dashboard_skill_compare_avoids_global_rise_cool():
     assert validate_spec(spec).ok
 
 
+def test_propose_dashboard_cooccur_pairs_with_seed():
+    spec = propose_dashboard(
+        "negli annunci quali tecnologie si abbinano di solito a java?"
+    )
+    techs = [t.lower() for t in spec.filters.technologies]
+    assert "java" in techs
+    widget_ids = {w.id for w in spec.widgets}
+    assert "chart_cooccur" in widget_ids
+    assert "chart_trends" not in widget_ids
+    assert "chart_countries" not in widget_ids
+    assert "chart_compare_trends" not in widget_ids
+    chart = next(w for w in spec.widgets if w.id == "chart_cooccur")
+    assert str(chart.params.get("seed") or "").lower() == "java"
+    assert "co-occurrence" in (spec.title or "").lower() or "java" in (spec.title or "").lower()
+    assert validate_spec(spec).ok
+
+
 def test_propose_report_observed_only():
     spec = propose_report("Report settimanale rates e skill gaps")
     assert spec.narrative_policy == "observed_only"

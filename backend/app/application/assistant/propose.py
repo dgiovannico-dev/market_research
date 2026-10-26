@@ -72,6 +72,19 @@ def parse_intent_from_prompt(prompt: str, base: IntentHints | None = None) -> In
         hints.include_quality = True
     if "skill gap" in lower or "profilo" in lower or "profile" in lower:
         hints.include_profile_gaps = True
+    cooccur_cue = bool(
+        re.search(
+            r"\b("
+            r"abbin\w*|co-?occurr\w*|pair(?:ed|ing|s)?|insieme|vicin\w*|"
+            r"along\s+with|together\s+with|combin\w*|associat\w*|"
+            r"neighbor\w*|adiacent\w*|related\s+to|stack\s+with|"
+            r"si\s+abbina(?:no)?|di\s+solito\s+(?:con|insieme)|"
+            r"which\s+tech(?:nolog(?:y|ies))?\s+(?:go\s+)?with|"
+            r"technologies?\s+(?:that\s+)?(?:pair|combine|appear)"
+            r")\b",
+            lower,
+        )
+    )
     compare_cue = bool(
         re.search(
             r"\b(vs\.?|versus|meglio|oppure|oppure\s+scegliere|better|prefer|scegliere|"
@@ -80,12 +93,20 @@ def parse_intent_from_prompt(prompt: str, base: IntentHints | None = None) -> In
         )
         or (" o " in f" {lower} " and len(techs) >= 2)
     )
-    if compare_cue and len(techs) >= 2:
+    # Pairing questions win over A-vs-B when both cues fire with a single seed tech.
+    if cooccur_cue and len(techs) >= 1:
+        hints.cooccur_mode = True
+        hints.compare_mode = False
+    elif compare_cue and len(techs) >= 2:
         hints.compare_mode = True
+        hints.cooccur_mode = False
     if not hints.title:
         if hints.compare_mode and len(techs) >= 2:
             pair = " vs ".join(t.title() for t in techs[:2])
             hints.title = f"{pair} — observed compare"
+        elif hints.cooccur_mode and techs:
+            seed = techs[0].title()
+            hints.title = f"{seed} — observed co-occurrence"
         else:
             hints.title = (text[:80] + "…") if len(text) > 80 else (text or "Observed market view")
     return hints
@@ -104,6 +125,7 @@ def propose_dashboard(intent: IntentHints | dict | str) -> DashboardSpec:
         DashboardWidget(id="kpi_remote", type="kpi", metric_key="remote_jobs_observed"),
     ]
     compare = bool(hints.compare_mode and len(hints.technologies) >= 2)
+    cooccur = bool(hints.cooccur_mode and hints.technologies)
     if compare:
         # Skill-vs-skill: volume/trends for the named techs — not the global rise/cool board.
         widgets.append(
@@ -119,7 +141,25 @@ def propose_dashboard(intent: IntentHints | dict | str) -> DashboardSpec:
                 id="cooccur",
                 type="table",
                 metric_key="skill_cooccurrence",
-                params={"seed": hints.technologies[:2]},
+                params={"seed": hints.technologies[0], "neighbor_limit": 15},
+            )
+        )
+    elif cooccur:
+        # "What pairs with X?" — neighbors for the seed, not global rise/cool.
+        widgets.append(
+            DashboardWidget(
+                id="chart_cooccur",
+                type="chart",
+                metric_key="skill_cooccurrence",
+                params={"seed": hints.technologies[0], "neighbor_limit": 15},
+            )
+        )
+        widgets.append(
+            DashboardWidget(
+                id="cooccur",
+                type="table",
+                metric_key="skill_cooccurrence",
+                params={"seed": hints.technologies[0], "neighbor_limit": 30},
             )
         )
     else:
@@ -140,7 +180,7 @@ def propose_dashboard(intent: IntentHints | dict | str) -> DashboardSpec:
                     id="cooccur",
                     type="table",
                     metric_key="skill_cooccurrence",
-                    params={"seed": hints.technologies[:3]},
+                    params={"seed": hints.technologies[0], "neighbor_limit": 20},
                 )
             )
     if hints.include_quality and hints.view_mode == "guided":
@@ -150,6 +190,11 @@ def propose_dashboard(intent: IntentHints | dict | str) -> DashboardSpec:
     if compare:
         notes.append(
             "Compare mode: chart focuses on named technologies; "
+            "do not substitute the global rising/cooling board."
+        )
+    if cooccur:
+        notes.append(
+            "Co-occurrence mode: chart lists skills that co-appear with the seed; "
             "do not substitute the global rising/cooling board."
         )
     spec = DashboardSpec(

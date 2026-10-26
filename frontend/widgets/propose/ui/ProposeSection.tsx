@@ -4,7 +4,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { api, type AssistantLocale } from "@/lib/api";
 import { useDashboardPrefs } from "@/features/dashboard-prefs";
-import { ProposedDashboardPreview } from "./ProposedDashboardPreview";
+import {
+  ProposedDashboardPreview,
+  type ProposeWidget,
+} from "./ProposedDashboardPreview";
 import { ProposedReportPreview } from "./ProposedReportPreview";
 
 type DashboardSpecSlice = {
@@ -12,6 +15,7 @@ type DashboardSpecSlice = {
   period_days?: number;
   view_mode?: "guided" | "trends_only";
   filters?: { technologies?: string[]; countries?: string[] };
+  widgets?: ProposeWidget[];
 };
 
 export function ProposeSection() {
@@ -21,23 +25,27 @@ export function ProposeSection() {
   const [prompt, setPrompt] = useState("");
   const [kind, setKind] = useState<"dashboard" | "report">("dashboard");
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [askedPrompt, setAskedPrompt] = useState("");
+  const [requestKey, setRequestKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const run = async () => {
+    const text = prompt.trim();
+    if (!text || busy) return;
     setBusy(true);
     setError(null);
+    setResult(null);
     try {
       const data = await api.assistantPropose(
-        prompt,
+        text,
         kind,
         kind === "report",
         locale,
       );
+      setAskedPrompt(text);
+      setRequestKey((k) => k + 1);
       setResult(data);
-      if (data.kind === "dashboard" && data.spec && typeof data.spec === "object") {
-        applyDashboardSpec(data.spec as DashboardSpecSlice);
-      }
     } catch (e) {
       setError(e instanceof Error ? e.message : t("proposeFailed"));
     } finally {
@@ -76,6 +84,12 @@ export function ProposeSection() {
           value={prompt}
           placeholder={t("promptPlaceholder")}
           onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              void run();
+            }
+          }}
         />
         <div className="flex flex-wrap gap-2">
           <select
@@ -107,18 +121,30 @@ export function ProposeSection() {
         {error ? <p className="text-sm text-[var(--warn)]">{error}</p> : null}
       </section>
 
+      {busy && !dashSpec && !reportSpec ? (
+        <p className="text-sm text-[var(--muted)]">{t("working")}</p>
+      ) : null}
+
       {dashSpec ? (
         <ProposedDashboardPreview
-          periodDays={dashSpec.period_days && dashSpec.period_days > 0 ? dashSpec.period_days : 30}
+          key={requestKey}
+          requestKey={requestKey}
+          periodDays={
+            dashSpec.period_days && dashSpec.period_days > 0
+              ? dashSpec.period_days
+              : 30
+          }
           title={dashSpec.title}
-          prompt={prompt}
+          prompt={askedPrompt}
           focusTechnologies={dashSpec.filters?.technologies || []}
+          widgets={dashSpec.widgets || []}
         />
       ) : null}
 
       {reportSpec ? (
         <ProposedReportPreview
-          prompt={prompt}
+          key={`report-${requestKey}`}
+          prompt={askedPrompt}
           title={reportSpec.title}
           periodDays={
             reportSpec.period_days && reportSpec.period_days > 0

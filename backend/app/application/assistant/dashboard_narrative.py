@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.adapters.driven.llm.provider import get_llm_provider
 from app.analytics import kpis as kpi_mod
+from app.analytics.cooccurrence import skill_cooccurrence
 from app.application.assistant.propose import parse_intent_from_prompt
 from app.application.llm.runtime_config import resolve_llm_settings
 
@@ -22,6 +23,8 @@ _SYSTEM_EN = (
     "If evidence.compared is present, answer the user's A-vs-B question using ONLY those "
     "rows (mentions + growth_pct). Never claim two skills have the same job count unless "
     "the JSON shows identical values. Do not pivot to unrelated rising/cooling lists. "
+    "If evidence.cooccur is present, answer which skills pair with the seed using ONLY "
+    "those neighbors (support counts). Do not answer with a global rising/cooling list. "
     "If the sample is thin, say so. Plain language, no markdown headings."
 )
 _SYSTEM_IT = (
@@ -31,6 +34,8 @@ _SYSTEM_IT = (
     "Se evidence.compared è presente, rispondi al confronto A-vs-B usando SOLO quelle righe "
     "(mentions + growth_pct). Non dire che due skill hanno lo stesso numero di job se i valori "
     "nel JSON sono diversi. Non spostarti su liste di crescita/calo non richieste. "
+    "Se evidence.cooccur è presente, rispondi su quali skill si abbinano al seed usando SOLO "
+    "quei vicini (support). Non rispondere con la lista globale di crescita/calo. "
     "Cita il sample size (n). Se il campione è sottile, dillo. Linguaggio semplice, senza titoli markdown."
 )
 
@@ -125,6 +130,32 @@ def build_evidence_pack(
         if hints.compare_mode and len(hints.technologies) >= 2
         else []
     )
+    cooccur_neighbors: list[dict[str, Any]] = []
+    cooccur_seed: Optional[str] = None
+    if hints.cooccur_mode and hints.technologies:
+        cooccur_seed = hints.technologies[0]
+        raw = skill_cooccurrence(
+            db,
+            days=days,
+            min_support=2,
+            country_code=country_code,
+            seed=cooccur_seed,
+            neighbor_limit=12,
+        )
+        seed_l = cooccur_seed.lower()
+        for row in list(raw.get("items") or [])[:12]:
+            a = str(row.get("tech_a") or "")
+            b = str(row.get("tech_b") or "")
+            other = b if a.lower() == seed_l else a if b.lower() == seed_l else None
+            if not other:
+                continue
+            cooccur_neighbors.append(
+                {
+                    "technology": other,
+                    "support": row.get("support"),
+                    "lift": row.get("lift"),
+                }
+            )
     pack: dict[str, Any] = {
         "user_prompt": (user_prompt or "").strip()[:500],
         "period_days": days,
@@ -132,6 +163,7 @@ def build_evidence_pack(
         "disclaimer": summary.get("disclaimer"),
         "unique_jobs_observed": jobs_n,
         "compare_mode": bool(compared),
+        "cooccur_mode": bool(cooccur_neighbors) or bool(hints.cooccur_mode and cooccur_seed),
         "kpis": [
             {
                 "metric_name": k.get("metric_name"),
@@ -146,6 +178,11 @@ def build_evidence_pack(
     }
     if compared:
         pack["compared"] = compared
+    if cooccur_seed:
+        pack["cooccur"] = {
+            "seed": cooccur_seed,
+            "neighbors": cooccur_neighbors,
+        }
     return pack
 
 
@@ -181,9 +218,43 @@ def _compare_narrative(evidence: dict[str, Any], locale: Locale) -> str:
     )
 
 
+def _cooccur_narrative(evidence: dict[str, Any], locale: Locale) -> str:
+    days = evidence.get("period_days")
+    n = int(evidence.get("unique_jobs_observed") or 0)
+    block = evidence.get("cooccur") or {}
+    seed = block.get("seed") or "?"
+    neighbors = list(block.get("neighbors") or [])
+    if neighbors:
+        bits = ", ".join(
+            f"{x.get('technology')} (support={x.get('support')})"
+            for x in neighbors[:8]
+        )
+    else:
+        bits = (
+            "nessuna skill adiacente con supporto sufficiente"
+            if locale == "it"
+            else "no neighboring skills with enough support"
+        )
+    if locale == "it":
+        return (
+            f"Negli annunci del corpus FMI (ultimi {days} giorni, n={n} job unici), "
+            f"le tecnologie che compaiono più spesso insieme a {seed} sono: {bits}. "
+            "Il supporto conta le co-menzioni nello stesso annuncio — non implica causalità "
+            "né dimensione di mercato. Usa questi abbinamenti per allargare lo stack osservato."
+        )
+    return (
+        f"In the FMI corpus (last {days} days, n={n} unique jobs), "
+        f"technologies that most often co-appear with {seed} are: {bits}. "
+        "Support counts co-mentions in the same ad — not causation or market size. "
+        "Use these pairs to widen an observed stack, not as ROI advice."
+    )
+
+
 def deterministic_narrative(evidence: dict[str, Any], locale: Locale) -> str:
     if evidence.get("compare_mode") and evidence.get("compared"):
         return _compare_narrative(evidence, locale)
+    if evidence.get("cooccur_mode") and evidence.get("cooccur"):
+        return _cooccur_narrative(evidence, locale)
     n = int(evidence.get("unique_jobs_observed") or 0)
     days = evidence.get("period_days")
     rising = evidence.get("rising") or []
@@ -242,8 +313,10 @@ async def narrate_dashboard(
     cfg = resolve_llm_settings(db)
     provider = get_llm_provider(db)
     health = await provider.health()
-    # Skill-vs-skill answers must stay numerically faithful — skip LLM paraphrase.
-    if evidence.get("compare_mode") and evidence.get("compared"):
+    # Compare / co-occur answers must stay numerically faithful — skip LLM paraphrase.
+    if (evidence.get("compare_mode") and evidence.get("compared")) or (
+        evidence.get("cooccur_mode") and evidence.get("cooccur")
+    ):
         return {
             "narrative": fallback,
             "source": "deterministic",
