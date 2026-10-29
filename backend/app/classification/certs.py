@@ -76,4 +76,14 @@ def extract_certifications(title: str, description: str) -> list[dict[str, Any]]
                 "extraction_method": "rules",
             }
             break
-    return list(found.values())
+    # Collapse accidental taxonomy twins that share a display_name.
+    by_name: dict[str, dict[str, Any]] = {}
+    for item in found.values():
+        key = str(item.get("display_name") or item.get("slug") or "").strip().lower()
+        prev = by_name.get(key)
+        if not prev:
+            by_name[key] = item
+            continue
+        if prev.get("importance") != "required" and item.get("importance") == "required":
+            by_name[key] = item
+    return list(by_name.values())

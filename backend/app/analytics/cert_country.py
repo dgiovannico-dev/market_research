@@ -94,18 +94,19 @@ def certifications_by_country(
             continue
         jobs_by_cc[country] = jobs_by_cc.get(country, 0) + cnt
 
+    name_key = func.lower(Certification.display_name)
     cell_rows = db.execute(
         select(
             Job.country_code,
-            Certification.display_name,
-            Certification.slug,
+            func.min(Certification.display_name),
+            func.min(Certification.slug),
             func.count(func.distinct(JobCertification.job_id)),
         )
         .select_from(JobCertification)
         .join(Certification, Certification.id == JobCertification.certification_id)
         .join(Job, Job.id == JobCertification.job_id)
         .where(JobCertification.job_id.in_(job_ids))
-        .group_by(Job.country_code, Certification.id, Certification.display_name, Certification.slug)
+        .group_by(Job.country_code, name_key)
     ).all()
 
     per_country: dict[str, list[tuple[str, str, int]]] = defaultdict(list)

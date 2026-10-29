@@ -83,16 +83,19 @@ def top_certifications(
     )
     job_ids = select(job_q.with_only_columns(Job.id).subquery().c.id)
     limit = max(1, min(int(top_n), 100))
+    # Collapse duplicate taxonomy rows that share a display_name (case-insensitive)
+    # so RankBars never shows the same label twice.
+    name_key = func.lower(Certification.display_name)
     rows = db.execute(
         select(
-            Certification.display_name,
-            Certification.slug,
-            func.count(JobCertification.id),
+            func.min(Certification.display_name),
+            func.min(Certification.slug),
+            func.count(func.distinct(JobCertification.job_id)),
         )
         .join(JobCertification, JobCertification.certification_id == Certification.id)
         .where(JobCertification.job_id.in_(job_ids))
-        .group_by(Certification.id, Certification.display_name, Certification.slug)
-        .order_by(func.count(JobCertification.id).desc())
+        .group_by(name_key)
+        .order_by(func.count(func.distinct(JobCertification.job_id)).desc())
         .limit(limit)
     ).all()
     sample_size = db.scalar(select(func.count()).select_from(job_q.subquery())) or 0

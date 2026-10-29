@@ -53,6 +53,8 @@
     "display_name": "AWS Certified Advanced Networking – Specialty",
     "aliases": [
       "AWS Advanced Networking",
+      "AWS Advanced Networking Specialty",
+      "AWS Networking Specialty",
       "ANS-C01",
       "Advanced Networking Specialty"
     ]
@@ -124,14 +126,6 @@
     "aliases": [
       "MLA-C01",
       "AWS ML Engineer Associate"
-    ]
-  },
-  {
-    "slug": "aws-networking-specialty",
-    "display_name": "AWS Advanced Networking Specialty",
-    "aliases": [
-      "ANS-C01",
-      "AWS Networking Specialty"
     ]
   },
   {
@@ -638,6 +632,7 @@
     "display_name": "Certified ScrumMaster",
     "aliases": [
       "CSM",
+      "Certified Scrum Master",
       "Scrum Alliance CSM"
     ]
   },
@@ -900,7 +895,7 @@
     "slug": "gitlab-ci",
     "display_name": "GitLab CI/CD Certified Associate",
     "aliases": [
-      "GitLab Certified Associate",
+      "GitLab CI/CD Certified Associate",
       "GitLab CI certification"
     ]
   },
@@ -1547,15 +1542,6 @@
     ]
   },
   {
-    "slug": "scrum-csm",
-    "display_name": "Certified ScrumMaster",
-    "aliases": [
-      "CSM",
-      "Certified Scrum Master",
-      "Scrum Alliance CSM"
-    ]
-  },
-  {
     "slug": "scrum-cspo",
     "display_name": "Certified Scrum Product Owner",
     "aliases": [
@@ -1566,8 +1552,6 @@
     "slug": "scrum-psm",
     "display_name": "Professional Scrum Master",
     "aliases": [
-      "PSM I",
-      "PSM II",
       "Professional Scrum Master",
       "Scrum.org PSM"
     ]
@@ -1576,8 +1560,6 @@
     "slug": "scrum-pspo",
     "display_name": "Professional Scrum Product Owner",
     "aliases": [
-      "PSPO I",
-      "PSPO II",
       "Professional Scrum Product Owner"
     ]
   },
